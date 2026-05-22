@@ -1,0 +1,53 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE / local tools
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.tmp
+*.bak
+*.orig
+
+# Logs
+*.log
+Logs/
+
+# .NET build output
+bin/
+obj/
+TestResults/
+
+# Unity generated files
+Client.Unity/Library/
+Client.Unity/Temp/
+Client.Unity/Obj/
+Client.Unity/Logs/
+Client.Unity/UserSettings/
+Client.Unity/MemoryCaptures/
+Client.Unity/Recordings/
+Client.Unity/Build/
+Client.Unity/Builds/
+Client.Unity/*.csproj
+Client.Unity/*.sln
+Client.Unity/*.suo
+
+# Unity package/build caches
+Client.Unity/Assets/StreamingAssets/package/
+Client.Unity/HybridCLRData/
+Client.Unity/Assets/HybridCLRGenerate/
+
+# Generated hot update dll bytes
+Client.Unity/Assets/AssetRaw/DLL/*.bytes
+Client.Unity/Assets/AssetRaw/DLL/*.bytes.meta
+
+# Local assistant/editor settings
+Client.Unity/.claude/

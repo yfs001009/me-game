@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "开发模式  - 所有进程": {
+      "commandName": "Project",
+      "environmentVariables": {},
+      "commandLineArgs": "--m Develop"
+    }
+  }
+}

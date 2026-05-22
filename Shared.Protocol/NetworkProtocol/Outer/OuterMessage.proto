@@ -1,0 +1,159 @@
+﻿syntax = "proto3";
+package Fantasy.Network.Message;
+
+/// 玩家基础资料，登录和大厅通用。
+message PlayerProfileInfo
+{
+    int64 PlayerId = 1;
+    string Account = 2;
+    string Nickname = 3;
+    int32 Level = 4;
+    int32 Exp = 5;
+    int32 AvatarId = 6;
+    int32 RankScore = 7;
+}
+
+/// 注册账号。
+message C2G_RegisterRequest // IRequest,G2C_RegisterResponse
+{
+    string Account = 1;
+    string Password = 2;
+    string Nickname = 3;
+}
+message G2C_RegisterResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+}
+
+/// 登录账号并获取会话 Token。
+message C2G_LoginRequest // IRequest,G2C_LoginResponse
+{
+    string Account = 1;
+    string Password = 2;
+}
+message G2C_LoginResponse // IResponse
+{
+    string Token = 1;
+    PlayerProfileInfo Profile = 2;
+    bool Success = 3;
+    string Message = 4;
+}
+
+/// 首次登录后设置昵称。
+message C2G_SetNicknameRequest // IRequest,G2C_SetNicknameResponse
+{
+    string Token = 1;
+    string Nickname = 2;
+}
+message G2C_SetNicknameResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    PlayerProfileInfo Profile = 3;
+}
+
+/// 拉取大厅首页。
+message C2G_LobbyHomeRequest // IRequest,G2C_LobbyHomeResponse
+{
+    string Token = 1;
+}
+message G2C_LobbyHomeResponse // IResponse
+{
+    PlayerProfileInfo Profile = 1;
+    repeated RoomSummaryInfo Rooms = 2;
+    MatchStatusInfo MatchStatus = 3;
+}
+
+/// 匹配状态。
+message MatchStatusInfo
+{
+    bool IsMatching = 1;
+    string Mode = 2;
+    int32 EstimatedSeconds = 3;
+    int32 AllocatedRoomId = 4;
+}
+
+/// 开始匹配。
+message C2G_StartMatchRequest // IRequest,G2C_StartMatchResponse
+{
+    string Token = 1;
+    string Mode = 2;
+}
+message G2C_StartMatchResponse // IResponse
+{
+    MatchStatusInfo Status = 1;
+}
+
+/// 创建自定义房间。
+message C2G_CreateRoomRequest // IRequest,G2C_CreateRoomResponse
+{
+    string Token = 1;
+    string RoomName = 2;
+    string Mode = 3;
+    int32 MapId = 4;
+    int32 MaxPlayers = 5;
+    bool IsPrivate = 6;
+    string Password = 7;
+}
+message G2C_CreateRoomResponse // IResponse
+{
+    RoomDetailInfo Room = 1;
+}
+
+/// 加入自定义房间。
+message C2G_JoinRoomRequest // IRequest,G2C_JoinRoomResponse
+{
+    string Token = 1;
+    int32 RoomId = 2;
+    string Password = 3;
+}
+message G2C_JoinRoomResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    RoomDetailInfo Room = 3;
+}
+
+/// 离开自定义房间。
+message C2G_LeaveRoomRequest // IRequest,G2C_LeaveRoomResponse
+{
+    string Token = 1;
+    int32 RoomId = 2;
+}
+message G2C_LeaveRoomResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    RoomDetailInfo Room = 3;
+}
+
+/// 房间摘要，用于大厅列表。
+message RoomSummaryInfo
+{
+    int32 RoomId = 1;
+    string RoomName = 2;
+    string Mode = 3;
+    int32 MapId = 4;
+    int32 CurrentPlayers = 5;
+    int32 MaxPlayers = 6;
+    bool IsPrivate = 7;
+    string State = 8;
+}
+
+/// 房间玩家槽位。
+message RoomPlayerInfo
+{
+    int64 PlayerId = 1;
+    string Nickname = 2;
+    int32 Level = 3;
+    bool IsOwner = 4;
+    bool IsReady = 5;
+}
+
+/// 房间详情。
+message RoomDetailInfo
+{
+    RoomSummaryInfo Summary = 1;
+    repeated RoomPlayerInfo Players = 2;
+}

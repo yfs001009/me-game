@@ -1,0 +1,16 @@
+﻿{
+  "Export": {
+    "NetworkProtocolDirectory": {
+      "Value": "../../Shared.Protocol/NetworkProtocol/",
+      "Comment": "Fantasy .proto 协议源目录"
+    },
+    "NetworkProtocolServerDirectory": {
+      "Value": "../../Server.Fantasy/Entity/Generate/NetworkProtocol",
+      "Comment": "生成到 Fantasy 服务端 Entity 项目"
+    },
+    "NetworkProtocolClientDirectory": {
+      "Value": "../../Client.Unity/Assets/GameScripts/HotFix/GameProto/NetworkProtocol",
+      "Comment": "生成到 TEngine 客户端热更协议目录"
+    }
+  }
+}
