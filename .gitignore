@@ -49,5 +49,9 @@ Client.Unity/Assets/HybridCLRGenerate/
 Client.Unity/Assets/AssetRaw/DLL/*.bytes
 Client.Unity/Assets/AssetRaw/DLL/*.bytes.meta
 
+# External map editor runtime / local map editor state
+Tools.Map/Tiled/
+Tools.Map/TiledProject/*.tiled-session
+
 # Local assistant/editor settings
 Client.Unity/.claude/

@@ -128,6 +128,198 @@ message G2C_LeaveRoomResponse // IResponse
     RoomDetailInfo Room = 3;
 }
 
+/// 拉取自定义房间详情。
+message C2G_RoomDetailRequest // IRequest,G2C_RoomDetailResponse
+{
+    string Token = 1;
+    int32 RoomId = 2;
+}
+message G2C_RoomDetailResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    RoomDetailInfo Room = 3;
+    BattleStartInfo Battle = 4;
+}
+
+/// 切换自定义房间准备状态。
+message C2G_SetRoomReadyRequest // IRequest,G2C_SetRoomReadyResponse
+{
+    string Token = 1;
+    int32 RoomId = 2;
+    bool IsReady = 3;
+}
+message G2C_SetRoomReadyResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    RoomDetailInfo Room = 3;
+}
+
+/// 房主开始自定义房间，进入战斗。
+message C2G_StartRoomRequest // IRequest,G2C_StartRoomResponse
+{
+    string Token = 1;
+    int32 RoomId = 2;
+}
+message G2C_StartRoomResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    RoomDetailInfo Room = 3;
+    BattleStartInfo Battle = 4;
+}
+
+/// 战斗启动信息。当前先用于客户端加载地图，后续扩展同步服地址/随机种子/阵营。
+message BattleStartInfo
+{
+    int32 BattleId = 1;
+    int32 RoomId = 2;
+    int32 MapId = 3;
+    string MapAsset = 4;
+    string Mode = 5;
+}
+
+/// 战斗玩家同步状态。
+message BattlePlayerStateInfo
+{
+    int64 PlayerId = 1;
+    string Nickname = 2;
+    string Camp = 3;
+    bool SceneLoaded = 4;
+    int32 Gold = 5;
+    int32 Wood = 6;
+    float PosX = 7;
+    float PosY = 8;
+    float MoveSpeed = 9;
+    int32 Hp = 10;
+    int32 MaxHp = 11;
+}
+
+/// 战斗建筑同步状态。
+message BattleBuildingStateInfo
+{
+    int64 InstanceId = 1;
+    int64 OwnerPlayerId = 2;
+    int32 BuildingId = 3;
+    int32 Level = 4;
+    int32 GridX = 5;
+    int32 GridY = 6;
+    int32 Hp = 7;
+    int32 MaxHp = 8;
+    string State = 9;
+}
+
+/// 战斗攻击表现事件。服务端发起，客户端只播放表现。
+message BattleAttackEventInfo
+{
+    int64 EventId = 1;
+    int64 SourceBuildingInstanceId = 2;
+    int64 TargetPlayerId = 3;
+    float FromX = 4;
+    float FromY = 5;
+    float ToX = 6;
+    float ToY = 7;
+    int32 Damage = 8;
+}
+
+/// 战斗快照。服务端权威，客户端只显示。
+message BattleSnapshotInfo
+{
+    int32 BattleId = 1;
+    int64 Tick = 2;
+    string State = 3;
+    repeated BattlePlayerStateInfo Players = 4;
+    repeated BattleBuildingStateInfo Buildings = 5;
+    repeated BattleAttackEventInfo AttackEvents = 6;
+}
+
+/// 客户端场景加载完成，等待所有玩家准备后服务端进入 Running。
+message C2G_BattleSceneLoadedRequest // IRequest,G2C_BattleSceneLoadedResponse
+{
+    string Token = 1;
+    int32 BattleId = 2;
+}
+message G2C_BattleSceneLoadedResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    BattleSnapshotInfo Snapshot = 3;
+}
+
+/// 拉取战斗快照。当前先用固定间隔 RPC 模拟持续同步，后续替换为 S2C 推送。
+message C2G_BattleSnapshotRequest // IRequest,G2C_BattleSnapshotResponse
+{
+    string Token = 1;
+    int32 BattleId = 2;
+    int64 LastKnownTick = 3;
+}
+message G2C_BattleSnapshotResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    BattleSnapshotInfo Snapshot = 3;
+}
+
+/// 玩家移动输入。客户端提交 WASD 方向，服务端权威更新位置并通过快照同步。
+message C2G_BattleMoveCommand // IRequest,G2C_BattleMoveCommandResponse
+{
+    string Token = 1;
+    int32 BattleId = 2;
+    float AxisX = 3;
+    float AxisY = 4;
+}
+message G2C_BattleMoveCommandResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    BattleSnapshotInfo Snapshot = 3;
+}
+
+/// 建造命令。客户端只提交意图，服务端校验资源、占格、战斗状态后返回快照。
+message C2G_BuildCommand // IRequest,G2C_BuildCommandResponse
+{
+    string Token = 1;
+    int32 BattleId = 2;
+    int32 BuildingId = 3;
+    int32 GridX = 4;
+    int32 GridY = 5;
+}
+message G2C_BuildCommandResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    BattleSnapshotInfo Snapshot = 3;
+}
+
+/// 升级建筑。
+message C2G_UpgradeBuildingCommand // IRequest,G2C_UpgradeBuildingCommandResponse
+{
+    string Token = 1;
+    int32 BattleId = 2;
+    int64 BuildingInstanceId = 3;
+}
+message G2C_UpgradeBuildingCommandResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    BattleSnapshotInfo Snapshot = 3;
+}
+
+/// 回收建筑。
+message C2G_RecycleBuildingCommand // IRequest,G2C_RecycleBuildingCommandResponse
+{
+    string Token = 1;
+    int32 BattleId = 2;
+    int64 BuildingInstanceId = 3;
+}
+message G2C_RecycleBuildingCommandResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    BattleSnapshotInfo Snapshot = 3;
+}
+
 /// 房间摘要，用于大厅列表。
 message RoomSummaryInfo
 {

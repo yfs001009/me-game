@@ -21,10 +21,12 @@ public sealed class AuthService
         lock (gate)
         {
             account = Normalize(account);
-            if (account.Length < 4 || password.Length < 6)
+            var rules = SheepServices.Rules;
+            if (account.Length < rules.AccountMinLength || account.Length > rules.AccountMaxLength ||
+                password.Length < rules.PasswordMinLength || password.Length > rules.PasswordMaxLength)
             {
                 Log.Warning($"注册失败：账号或密码长度不符合要求。账号={account}");
-                return (false, "账号至少4位，密码至少6位。 ");
+                return (false, $"账号需{rules.AccountMinLength}-{rules.AccountMaxLength}位，密码需{rules.PasswordMinLength}-{rules.PasswordMaxLength}位。");
             }
 
             if (accountsByName.ContainsKey(account))

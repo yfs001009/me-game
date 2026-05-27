@@ -6,13 +6,28 @@ using TEngine;
 
 namespace GameLogic.SheepBattle.Login
 {
-    public sealed class LoginController
+    public sealed class LoginController : ILoginCommand
     {
         public static LoginController Instance { get; } = new LoginController();
         public LoginModel Model { get; } = new LoginModel();
 
         private LoginController()
         {
+        }
+
+        public void OnLogin(string account, string password)
+        {
+            Login(account, password);
+        }
+
+        public void OnRegister(string account, string password, string nickname)
+        {
+            Register(account, password, nickname);
+        }
+
+        public void OnSubmitNickname(string nickname)
+        {
+            SubmitNickname(nickname);
         }
 
         public async void Login(string account, string password)
@@ -89,6 +104,7 @@ namespace GameLogic.SheepBattle.Login
                 }
 
                 await EnterLobbyAsync();
+                GameModule.UI.CloseUI<NicknameUI>();
                 return true;
             }
             catch (System.Exception exception)
@@ -97,6 +113,11 @@ namespace GameLogic.SheepBattle.Login
                 CommonNoticeService.Show(exception.Message, "设置昵称失败");
                 return false;
             }
+        }
+
+        public void SubmitNickname(string nickname)
+        {
+            CompleteNicknameAsync(nickname).Coroutine();
         }
 
         private static async FTask EnterLobbyAsync()

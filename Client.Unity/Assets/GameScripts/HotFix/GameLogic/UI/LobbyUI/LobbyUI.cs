@@ -13,6 +13,7 @@ namespace GameLogic
         private Text _txtLobby;
         private Text _txtStatus;
         private Button _btnRefresh;
+        private Button _btnStartMatch;
         private Button _btnCreateRoom;
         private Button _btnJoinRoom;
 
@@ -22,15 +23,17 @@ namespace GameLogic
             _txtLobby = FindChildComponent<Text>("m_txtLobby");
             _txtStatus = FindChildComponent<Text>("m_txtStatus");
             _btnRefresh = FindChildComponent<Button>("m_btnRefresh");
+            _btnStartMatch = FindChildComponent<Button>("m_btnStartMatch");
             _btnCreateRoom = FindChildComponent<Button>("m_btnCreateRoom");
             _btnJoinRoom = FindChildComponent<Button>("m_btnEnterBattle");
         }
 
         protected override void RegisterEvent()
         {
-            _btnRefresh?.onClick.AddListener(OnClickRefresh);
+            _btnRefresh?.onClick.AddListener(OnClickRefreshCommand);
+            _btnStartMatch?.onClick.AddListener(OnClickStartMatchCommand);
             _btnCreateRoom?.onClick.AddListener(OnClickCreateRoom);
-            _btnJoinRoom?.onClick.AddListener(OnClickJoinRoom);
+            _btnJoinRoom?.onClick.AddListener(OnClickJoinRoomCommand);
             AddUIEvent<LobbyViewChangedEvent>(OnLobbyViewChanged);
             AddUIEvent<LobbyStatusChangedEvent>(OnLobbyStatusChanged);
         }
@@ -38,8 +41,11 @@ namespace GameLogic
         protected override void OnCreate()
         {
             SetButtonText(_btnRefresh, "刷新大厅", _txtStatus?.font);
+            SetButtonText(_btnStartMatch, "直接匹配", _txtStatus?.font);
             SetButtonText(_btnCreateRoom, "创建房间", _txtStatus?.font);
             SetButtonText(_btnJoinRoom, "加入房间", _txtStatus?.font);
+            ApplyLobbyLayout();
+            ApplyArtSkin();
         }
 
         protected override void OnRefresh()
@@ -51,9 +57,7 @@ namespace GameLogic
         {
             if (_txtPlayer != null)
             {
-                _txtPlayer.text = viewModel == null
-                    ? "玩家：未登录"
-                    : $"玩家：{viewModel.PlayerName}  ID:{viewModel.PlayerId}  Lv.{viewModel.Level}";
+                _txtPlayer.text = viewModel == null ? "玩家：未登录" : $"{viewModel.PlayerName}  Lv.{viewModel.Level}";
             }
 
             if (_txtLobby != null)
@@ -76,26 +80,39 @@ namespace GameLogic
             SetStatus(eventData.Status);
         }
 
-        private async void OnClickRefresh()
+        private void OnClickRefreshCommand()
         {
-            LobbyController.Instance.SetStatus("状态：刷新大厅中...");
-            await LobbyController.Instance.RefreshLobbyAsync();
-            LobbyController.Instance.SetStatus("状态：大厅刷新完成");
+            GameEvent.Get<ILobbyCommand>()?.OnRefreshLobby();
         }
 
-        private async void OnClickCreateRoom()
+        private void OnClickStartMatchCommand()
         {
-            LobbyController.Instance.SetStatus("状态：创建房间中...");
-            var room = await LobbyController.Instance.CreateRoomAsync("默认房间");
-            GameModule.UI.CloseUI<LobbyUI>();
-            GameModule.UI.ShowUIAsync<RoomUI>(room);
+            GameEvent.Get<ILobbyCommand>()?.OnStartMatch();
         }
 
-        private async void OnClickJoinRoom()
+        private void OnClickJoinRoomCommand()
         {
-            LobbyController.Instance.SetStatus("状态：刷新房间列表中...");
-            var lobby = await LobbyController.Instance.RefreshLobbyAsync();
-            GameModule.UI.ShowUIAsync<RoomListUI>(lobby);
+            GameEvent.Get<ILobbyCommand>()?.OnOpenRoomList();
+        }
+
+        private void OnClickRefresh()
+        {
+            GameEvent.Get<ILobbyCommand>()?.OnRefreshLobby();
+        }
+
+        private void OnClickStartMatch()
+        {
+            GameEvent.Get<ILobbyCommand>()?.OnStartMatch();
+        }
+
+        private void OnClickCreateRoom()
+        {
+            GameModule.UI.ShowUIAsync<CreateRoomUI>();
+        }
+
+        private void OnClickJoinRoom()
+        {
+            GameEvent.Get<ILobbyCommand>()?.OnOpenRoomList();
         }
 
         private void SetStatus(string text)
@@ -106,6 +123,88 @@ namespace GameLogic
             }
 
             Log.Info(text);
+        }
+
+        private void ApplyLobbyLayout()
+        {
+            SetTopRightText(_txtPlayer, -36f, -32f, 360f, 48f);
+            SetCenterText(_txtLobby?.transform as RectTransform, 96f, 640f, 120f);
+            SetCenterText(_txtStatus?.transform as RectTransform, -128f, 640f, 52f);
+            SetButtonRect(_btnStartMatch, -170f, 12f);
+            SetButtonRect(_btnCreateRoom, 170f, 12f);
+            SetButtonRect(_btnJoinRoom, -170f, -72f);
+            SetButtonRect(_btnRefresh, 170f, -72f);
+        }
+
+        private void ApplyArtSkin()
+        {
+            var rootImage = gameObject.GetComponent<Image>();
+            if (rootImage == null)
+            {
+                rootImage = gameObject.AddComponent<Image>();
+            }
+
+            DynamicUI.ApplySprite(rootImage, DynamicUI.ArtLobbyBackground, Image.Type.Simple);
+            SkinButton(_btnStartMatch, DynamicUI.ArtButtonPrimary);
+            SkinButton(_btnCreateRoom, DynamicUI.ArtButtonSecondary);
+            SkinButton(_btnJoinRoom, DynamicUI.ArtButtonSecondary);
+            SkinButton(_btnRefresh, DynamicUI.ArtButtonSecondary);
+        }
+
+        private static void SkinButton(Button button, string spriteLocation)
+        {
+            if (button?.targetGraphic is Image image)
+            {
+                DynamicUI.ApplySprite(image, spriteLocation);
+                image.color = Color.white;
+            }
+        }
+
+        private static void SetTopRightText(Text text, float x, float y, float width, float height)
+        {
+            if (text == null)
+            {
+                return;
+            }
+
+            var rect = text.transform as RectTransform;
+            rect.anchorMin = new Vector2(1f, 1f);
+            rect.anchorMax = new Vector2(1f, 1f);
+            rect.pivot = new Vector2(1f, 1f);
+            rect.sizeDelta = new Vector2(width, height);
+            rect.anchoredPosition = new Vector2(x, y);
+            text.alignment = TextAnchor.MiddleRight;
+            text.horizontalOverflow = HorizontalWrapMode.Overflow;
+            text.verticalOverflow = VerticalWrapMode.Truncate;
+        }
+
+        private static void SetCenterText(RectTransform rect, float y, float width, float height)
+        {
+            if (rect == null)
+            {
+                return;
+            }
+
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = new Vector2(width, height);
+            rect.anchoredPosition = new Vector2(0f, y);
+        }
+
+        private static void SetButtonRect(Button button, float x, float y)
+        {
+            var rect = button != null ? button.transform as RectTransform : null;
+            if (rect == null)
+            {
+                return;
+            }
+
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = new Vector2(220f, 64f);
+            rect.anchoredPosition = new Vector2(x, y);
         }
 
         private static void SetButtonText(Button button, string text, Font font)

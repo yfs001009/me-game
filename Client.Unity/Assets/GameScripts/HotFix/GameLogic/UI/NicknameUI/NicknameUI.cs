@@ -1,5 +1,4 @@
 ﻿using GameLogic.SheepBattle.Common;
-using GameLogic.SheepBattle.Login;
 using TEngine;
 using UnityEngine;
 using UnityEngine.UI;
@@ -25,7 +24,7 @@ namespace GameLogic
             var mask = CreateImage("m_imgMask", rectTransform, new Color(0f, 0f, 0f, 0.62f));
             Stretch(((mask.transform) as RectTransform));
 
-            var panel = CreateImage("m_imgPanel", rectTransform, new Color(0.95f, 0.97f, 0.94f, 1f));
+            var panel = DynamicUI.SpriteImage("m_imgPanel", rectTransform, DynamicUI.ArtPanelPopup, Color.white);
             ((panel.transform) as RectTransform).anchorMin = new Vector2(0.5f, 0.5f);
             ((panel.transform) as RectTransform).anchorMax = new Vector2(0.5f, 0.5f);
             ((panel.transform) as RectTransform).sizeDelta = new Vector2(560f, 330f);
@@ -53,7 +52,7 @@ namespace GameLogic
             ((_inputNickname.transform) as RectTransform).sizeDelta = new Vector2(420f, 58f);
             ((_inputNickname.transform) as RectTransform).anchoredPosition = new Vector2(0f, 12f);
 
-            _btnConfirm = CreateButton("m_btnConfirm", ((panel.transform) as RectTransform), font, "进入大厅", new Color(0.18f, 0.44f, 0.36f, 1f));
+            _btnConfirm = CreateButton("m_btnConfirm", ((panel.transform) as RectTransform), font, "进入大厅", DynamicUI.ArtButtonPrimary);
             ((_btnConfirm.transform) as RectTransform).anchorMin = new Vector2(0.5f, 0f);
             ((_btnConfirm.transform) as RectTransform).anchorMax = new Vector2(0.5f, 0f);
             ((_btnConfirm.transform) as RectTransform).sizeDelta = new Vector2(200f, 58f);
@@ -61,7 +60,7 @@ namespace GameLogic
             _btnConfirm.onClick.AddListener(OnClickConfirm);
         }
 
-        private async void OnClickConfirm()
+        private void OnClickConfirm()
         {
             var nickname = _inputNickname?.text?.Trim() ?? string.Empty;
             if (nickname.Length < 2 || nickname.Length > 12)
@@ -70,18 +69,12 @@ namespace GameLogic
                 return;
             }
 
-            _btnConfirm.interactable = false;
-            var ok = await LoginController.Instance.CompleteNicknameAsync(nickname);
-            _btnConfirm.interactable = true;
-            if (ok)
-            {
-                GameModule.UI.CloseUI<NicknameUI>();
-            }
+            GameEvent.Get<ILoginCommand>()?.OnSubmitNickname(nickname);
         }
 
         private static InputField CreateInput(Transform parent, Font font)
         {
-            var image = CreateImage("m_inputNickname", parent, Color.white);
+            var image = DynamicUI.SpriteImage("m_inputNickname", parent, DynamicUI.ArtInputFrame, Color.white);
             var input = image.gameObject.AddComponent<InputField>();
             input.targetGraphic = image;
             var text = CreateText("Text", image.transform, font, 24, FontStyle.Normal, TextAnchor.MiddleLeft, Color.black);
@@ -126,9 +119,9 @@ namespace GameLogic
             return text;
         }
 
-        private static Button CreateButton(string name, Transform parent, Font font, string label, Color color)
+        private static Button CreateButton(string name, Transform parent, Font font, string label, string spriteLocation)
         {
-            var image = CreateImage(name, parent, color);
+            var image = DynamicUI.SpriteImage(name, parent, spriteLocation, Color.white);
             var button = image.gameObject.AddComponent<Button>();
             button.targetGraphic = image;
             var text = CreateText("m_txtLabel", image.transform, font, 24, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white);

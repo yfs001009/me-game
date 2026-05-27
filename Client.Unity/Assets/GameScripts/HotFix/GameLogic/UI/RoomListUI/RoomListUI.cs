@@ -1,4 +1,5 @@
 ﻿using GameLogic.SheepBattle.Common;
+using GameLogic.SheepBattle.Event;
 using GameLogic.SheepBattle.Lobby;
 using TEngine;
 using UnityEngine;
@@ -12,6 +13,11 @@ namespace GameLogic
         private RectTransform _listRoot;
         private Text _txtEmpty;
         private LobbyViewModel _viewModel;
+
+        protected override void RegisterEvent()
+        {
+            AddUIEvent<LobbyViewChangedEvent>(OnLobbyViewChanged);
+        }
 
         protected override void OnCreate()
         {
@@ -32,7 +38,7 @@ namespace GameLogic
             var mask = CreateImage("m_imgMask", rectTransform, new Color(0f, 0f, 0f, 0.55f));
             Stretch(((mask.transform) as RectTransform));
 
-            var panel = CreateImage("m_imgPanel", rectTransform, new Color(0.94f, 0.96f, 0.94f, 1f));
+            var panel = DynamicUI.SpriteImage("m_imgPanel", rectTransform, DynamicUI.ArtPanelPopup, Color.white);
             ((panel.transform) as RectTransform).anchorMin = new Vector2(0.5f, 0.5f);
             ((panel.transform) as RectTransform).anchorMax = new Vector2(0.5f, 0.5f);
             ((panel.transform) as RectTransform).sizeDelta = new Vector2(760f, 520f);
@@ -46,13 +52,21 @@ namespace GameLogic
             ((title.transform) as RectTransform).offsetMax = new Vector2(-180f, -24f);
             title.text = "房间列表";
 
-            var closeButton = CreateButton("m_btnClose", ((panel.transform) as RectTransform), font, "关闭", new Color(0.35f, 0.37f, 0.36f, 1f));
+            var closeButton = CreateButton("m_btnClose", ((panel.transform) as RectTransform), font, "关闭", DynamicUI.ArtButtonDanger);
             ((closeButton.transform) as RectTransform).anchorMin = new Vector2(1f, 1f);
             ((closeButton.transform) as RectTransform).anchorMax = new Vector2(1f, 1f);
             ((closeButton.transform) as RectTransform).pivot = new Vector2(1f, 1f);
             ((closeButton.transform) as RectTransform).sizeDelta = new Vector2(120f, 48f);
             ((closeButton.transform) as RectTransform).anchoredPosition = new Vector2(-28f, -24f);
             closeButton.onClick.AddListener(() => GameModule.UI.CloseUI<RoomListUI>());
+
+            var refreshButton = CreateButton("m_btnRefresh", ((panel.transform) as RectTransform), font, "刷新", DynamicUI.ArtButtonSecondary);
+            ((refreshButton.transform) as RectTransform).anchorMin = new Vector2(1f, 1f);
+            ((refreshButton.transform) as RectTransform).anchorMax = new Vector2(1f, 1f);
+            ((refreshButton.transform) as RectTransform).pivot = new Vector2(1f, 1f);
+            ((refreshButton.transform) as RectTransform).sizeDelta = new Vector2(120f, 48f);
+            ((refreshButton.transform) as RectTransform).anchoredPosition = new Vector2(-160f, -24f);
+            refreshButton.onClick.AddListener(OnClickRefresh);
 
             _listRoot = new GameObject("m_listRooms", typeof(RectTransform)).GetComponent<RectTransform>();
             _listRoot.SetParent(((panel.transform) as RectTransform), false);
@@ -64,6 +78,7 @@ namespace GameLogic
             _txtEmpty = CreateText("m_txtEmpty", _listRoot, font, 24, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(0.18f, 0.18f, 0.18f, 1f));
             Stretch(((_txtEmpty.transform) as RectTransform));
             _txtEmpty.text = "暂无可加入房间";
+
         }
 
         private void RefreshList()
@@ -93,7 +108,7 @@ namespace GameLogic
         private void CreateRoomItem(RoomSummaryViewModel room, int index)
         {
             var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            var button = CreateButton($"m_btnRoom_{room.RoomId}", _listRoot, font, string.Empty, index % 2 == 0 ? new Color(0.84f, 0.89f, 0.86f, 1f) : new Color(0.78f, 0.84f, 0.81f, 1f));
+            var button = CreateButton($"m_btnRoom_{room.RoomId}", _listRoot, font, string.Empty, DynamicUI.ArtButtonSecondary);
             ((button.transform) as RectTransform).anchorMin = new Vector2(0f, 1f);
             ((button.transform) as RectTransform).anchorMax = new Vector2(1f, 1f);
             ((button.transform) as RectTransform).pivot = new Vector2(0.5f, 1f);
@@ -106,22 +121,36 @@ namespace GameLogic
             label.fontStyle = FontStyle.Normal;
             ((label.transform) as RectTransform).offsetMin = new Vector2(18f, 0f);
             ((label.transform) as RectTransform).offsetMax = new Vector2(-18f, 0f);
-            label.text = $"{room.RoomName}  #{room.RoomId}    {room.CurrentPlayers}/{room.MaxPlayers}    地图:{room.MapId}    状态:{room.State}";
-            button.onClick.AddListener(() => OnClickRoom(room.RoomId));
+            var privacy = room.IsPrivate ? "私密" : "公开";
+            label.text = $"{room.RoomName}  #{room.RoomId}    {room.CurrentPlayers}/{room.MaxPlayers}    地图:{room.MapId}    {privacy}    状态:{room.State}";
+            button.onClick.AddListener(() => OnClickRoom(room));
         }
 
-        private async void OnClickRoom(int roomId)
+        private void OnLobbyViewChanged(LobbyViewChangedEvent eventData)
         {
-            var room = await LobbyController.Instance.JoinRoomAsync(roomId);
-            if (room == null || room.RoomId <= 0)
+            _viewModel = eventData.ViewModel;
+            RefreshList();
+        }
+
+        private void OnClickRefresh()
+        {
+            GameEvent.Get<ILobbyCommand>()?.OnRefreshLobby();
+        }
+
+        private void OnClickRoom(RoomSummaryViewModel roomSummary)
+        {
+            if (roomSummary == null)
             {
-                CommonNoticeService.Show("加入房间失败，请刷新后重试。");
                 return;
             }
 
-            GameModule.UI.CloseUI<RoomListUI>();
-            GameModule.UI.CloseUI<LobbyUI>();
-            GameModule.UI.ShowUIAsync<RoomUI>(room);
+            if (roomSummary.IsPrivate)
+            {
+                GameModule.UI.ShowUIAsync<RoomPasswordUI>(roomSummary);
+                return;
+            }
+
+            GameEvent.Get<ILobbyCommand>()?.OnJoinRoom(roomSummary.RoomId, string.Empty);
         }
 
         private static Image CreateImage(string name, Transform parent, Color color)
@@ -149,9 +178,9 @@ namespace GameLogic
             return text;
         }
 
-        private static Button CreateButton(string name, Transform parent, Font font, string label, Color color)
+        private static Button CreateButton(string name, Transform parent, Font font, string label, string spriteLocation)
         {
-            var image = CreateImage(name, parent, color);
+            var image = DynamicUI.SpriteImage(name, parent, spriteLocation, Color.white);
             var button = image.gameObject.AddComponent<Button>();
             button.targetGraphic = image;
             var text = CreateText("m_txtLabel", image.transform, font, 22, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white);
@@ -159,6 +188,7 @@ namespace GameLogic
             text.text = label;
             return button;
         }
+
 
         private static void Stretch(RectTransform rect)
         {

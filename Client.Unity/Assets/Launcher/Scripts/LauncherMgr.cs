@@ -89,7 +89,15 @@ namespace Launcher
             }
 
             uiWindow?.Hide();
-            Object.DestroyImmediate(uiWindow?.gameObject);
+            if (Application.isPlaying)
+            {
+                Object.Destroy(uiWindow?.gameObject);
+            }
+            else
+            {
+                Object.DestroyImmediate(uiWindow?.gameObject);
+            }
+
             m_uiMapDict.Remove(uiName);
         }
 

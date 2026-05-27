@@ -5,6 +5,17 @@ namespace GameLogic
 {
     internal static class DynamicUI
     {
+        public const string ArtLoginBackground = "Assets/AssetRaw/UI/Art/login_bg_winter_camp.png";
+        public const string ArtLobbyBackground = "Assets/AssetRaw/UI/Art/lobby_bg_fortified_camp.png";
+        public const string ArtPanelPopup = "Assets/AssetRaw/UI/Art/panel_popup_common.png";
+        public const string ArtPanelRoom = "Assets/AssetRaw/UI/Art/panel_room_large.png";
+        public const string ArtButtonPrimary = "Assets/AssetRaw/UI/Art/button_primary_green.png";
+        public const string ArtButtonSecondary = "Assets/AssetRaw/UI/Art/button_secondary_blue.png";
+        public const string ArtButtonDanger = "Assets/AssetRaw/UI/Art/button_danger_red.png";
+        public const string ArtInputFrame = "Assets/AssetRaw/UI/Art/input_frame_parchment.png";
+        public const string ArtRoomPlayerSlot = "Assets/AssetRaw/UI/Art/room_player_slot_cartoon.png";
+        public const string ArtTitleRibbon = "Assets/AssetRaw/UI/Art/title_ribbon_sheep_battle.png";
+
         public static Font Font => Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
         public static void Clear(RectTransform root)
@@ -30,6 +41,24 @@ namespace GameLogic
             var image = go.GetComponent<Image>();
             image.color = color;
             return image;
+        }
+
+        public static Image SpriteImage(string name, Transform parent, string spriteLocation, Color fallbackColor, UnityEngine.UI.Image.Type imageType = UnityEngine.UI.Image.Type.Sliced)
+        {
+            var image = Image(name, parent, fallbackColor);
+            ApplySprite(image, spriteLocation, imageType);
+            return image;
+        }
+
+        public static void ApplySprite(Image image, string spriteLocation, UnityEngine.UI.Image.Type imageType = UnityEngine.UI.Image.Type.Sliced)
+        {
+            if (image == null || string.IsNullOrWhiteSpace(spriteLocation))
+            {
+                return;
+            }
+
+            image.type = imageType;
+            image.SetSprite(spriteLocation);
         }
 
         public static Text Text(string name, Transform parent, string content, int size, TextAnchor anchor, Color color, FontStyle style = FontStyle.Normal)
@@ -59,9 +88,19 @@ namespace GameLogic
             return button;
         }
 
+        public static Button SkinnedButton(string name, Transform parent, string label, string spriteLocation = ArtButtonPrimary)
+        {
+            var image = SpriteImage(name, parent, spriteLocation, Color.white);
+            var button = image.gameObject.AddComponent<Button>();
+            button.targetGraphic = image;
+            var text = Text("m_txtLabel", image.transform, label, 24, TextAnchor.MiddleCenter, Color.white, FontStyle.Bold);
+            Stretch(Rect(text));
+            return button;
+        }
+
         public static InputField Input(string name, Transform parent, string placeholderText, int limit = 32, bool password = false)
         {
-            var image = Image(name, parent, Color.white);
+            var image = SpriteImage(name, parent, ArtInputFrame, Color.white);
             var input = image.gameObject.AddComponent<InputField>();
             input.targetGraphic = image;
             input.characterLimit = limit;

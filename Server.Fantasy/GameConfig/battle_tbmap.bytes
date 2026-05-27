@@ -1,0 +1,1 @@
+训练牧场battle_map_1ClassicInfection#Ground,wall,birth_area,shop,monsterCMVP 默认地图，可单人开房测试，也支持最多 8 人。R自定义房间默认选择；房主开始游戏后客户端加载 battle_map_1。黑石矿道battle_map_2ClassicInfection#Ground,wall,birth_area,shop,monster-中大型地图预留，适合多人对抗。8后续在 Tiled 中导出 battle_map_2.json 后启用。

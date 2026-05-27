@@ -46,7 +46,7 @@ public sealed class MatchService
         {
             IsMatching = true,
             Mode = ticket.Mode,
-            EstimatedSeconds = Math.Max(1, 10 - (int)(DateTimeOffset.UtcNow - ticket.StartTimeUtc).TotalSeconds),
+            EstimatedSeconds = Math.Max(1, SheepServices.Rules.MatchEstimatedSeconds - (int)(DateTimeOffset.UtcNow - ticket.StartTimeUtc).TotalSeconds),
             AllocatedRoomId = 0
         };
     }

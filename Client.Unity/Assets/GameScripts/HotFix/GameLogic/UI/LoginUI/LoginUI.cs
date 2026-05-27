@@ -1,15 +1,10 @@
-using GameLogic.SheepBattle.Common;
 using GameLogic.SheepBattle.Event;
-using GameLogic.SheepBattle.Login;
 using TEngine;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace GameLogic
 {
-    /// <summary>
-    /// 登录窗口。遵守 TEngine UIWindow 生命周期，只负责 UI 事件转发。
-    /// </summary>
     [Window(UILayer.UI)]
     internal sealed class LoginUI : UIWindow
     {
@@ -17,28 +12,34 @@ namespace GameLogic
         private InputField _inputPassword;
         private Button _btnLogin;
         private Button _btnRegister;
+        private Button _btnGuest;
 
         protected override void ScriptGenerator()
         {
             _inputAccount = FindChildComponent<InputField>("m_inputAccount");
             _inputPassword = FindChildComponent<InputField>("m_inputPassword");
             _btnLogin = FindChildComponent<Button>("m_btnLogin");
+            _btnRegister = FindChildComponent<Button>("m_btnRegister");
+            _btnGuest = FindChildComponent<Button>("m_btnGuest");
         }
 
         protected override void RegisterEvent()
         {
             _btnLogin?.onClick.AddListener(OnClickLogin);
+            _btnRegister?.onClick.AddListener(() => GameModule.UI.ShowUIAsync<RegisterUI>());
+            _btnGuest?.onClick.AddListener(OnClickGuestLogin);
             AddUIEvent<LoginStatusChangedEvent>(OnLoginStatusChanged);
         }
 
         protected override void OnCreate()
         {
-            EnsureExtraButtons();
+            ApplyCompactLayout();
+            ApplyArtSkin();
         }
 
         public void OnClickLogin(string account, string password)
         {
-            LoginController.Instance.Login(account, password);
+            GameEvent.Get<ILoginCommand>()?.OnLogin(account, password);
         }
 
         private void OnClickLogin()
@@ -46,58 +47,72 @@ namespace GameLogic
             OnClickLogin(_inputAccount?.text ?? string.Empty, _inputPassword?.text ?? string.Empty);
         }
 
-        private void OnLoginStatusChanged(LoginStatusChangedEvent eventData)
+        private void OnClickGuestLogin()
         {
-            Log.Info($"登录界面状态：{eventData.Status}，忙碌={eventData.IsBusy}");
+            var suffix = System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() % 100000;
+            OnClickLogin($"guest{suffix:D5}", "guest123");
         }
 
-        private void EnsureExtraButtons()
+        private void OnLoginStatusChanged(LoginStatusChangedEvent eventData)
         {
-            if (_btnRegister != null)
+            Log.Info($"Login UI status: {eventData.Status}, busy={eventData.IsBusy}");
+        }
+
+        private void ApplyCompactLayout()
+        {
+            SetCenterItem(_inputAccount?.transform as RectTransform, 86f, 340f, 56f);
+            SetCenterItem(_inputPassword?.transform as RectTransform, 18f, 340f, 56f);
+            SetCenterItem(_btnLogin?.transform as RectTransform, -58f, 340f, 58f);
+            SetCenterItem(_btnRegister?.transform as RectTransform, -132f, 160f, 52f, -92f);
+            SetCenterItem(_btnGuest?.transform as RectTransform, -132f, 160f, 52f, 92f);
+        }
+
+        private void ApplyArtSkin()
+        {
+            var rootImage = gameObject.GetComponent<Image>();
+            if (rootImage == null)
+            {
+                rootImage = gameObject.AddComponent<Image>();
+            }
+
+            DynamicUI.ApplySprite(rootImage, DynamicUI.ArtLoginBackground, Image.Type.Simple);
+            SkinInput(_inputAccount);
+            SkinInput(_inputPassword);
+            SkinButton(_btnLogin, DynamicUI.ArtButtonPrimary);
+            SkinButton(_btnRegister, DynamicUI.ArtButtonSecondary);
+            SkinButton(_btnGuest, DynamicUI.ArtButtonSecondary);
+        }
+
+        private static void SkinInput(InputField input)
+        {
+            if (input?.targetGraphic is Image image)
+            {
+                DynamicUI.ApplySprite(image, DynamicUI.ArtInputFrame);
+                image.color = Color.white;
+            }
+        }
+
+        private static void SkinButton(Button button, string spriteLocation)
+        {
+            if (button?.targetGraphic is Image image)
+            {
+                DynamicUI.ApplySprite(image, spriteLocation);
+                image.color = Color.white;
+            }
+        }
+
+        private static void SetCenterItem(RectTransform rect, float y, float width, float height, float x = 0f)
+        {
+            if (rect == null)
             {
                 return;
             }
 
-            var font = _inputAccount?.textComponent?.font ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            var loginRect = _btnLogin != null ? _btnLogin.transform as RectTransform : null;
-            _btnRegister = CreateButton("m_btnRegister", "注册账号", font, loginRect, new Vector2(0f, -76f), new Color(0.24f, 0.46f, 0.38f, 1f));
-            _btnRegister.onClick.AddListener(() => GameModule.UI.ShowUIAsync<RegisterUI>());
-
-            var guest = CreateButton("m_btnGuest", "游客登录", font, loginRect, new Vector2(0f, -152f), new Color(0.35f, 0.37f, 0.36f, 1f));
-            guest.onClick.AddListener(() => CommonNoticeService.Show("游客登录稍后接入。"));
-        }
-
-        private Button CreateButton(string name, string text, Font font, RectTransform reference, Vector2 offset, Color color)
-        {
-            var buttonGo = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
-            buttonGo.transform.SetParent(rectTransform, false);
-            var rect = buttonGo.GetComponent<RectTransform>();
-            rect.anchorMin = reference?.anchorMin ?? new Vector2(0.5f, 0.5f);
-            rect.anchorMax = reference?.anchorMax ?? new Vector2(0.5f, 0.5f);
-            rect.pivot = reference?.pivot ?? new Vector2(0.5f, 0.5f);
-            rect.sizeDelta = reference?.sizeDelta ?? new Vector2(320f, 56f);
-            rect.anchoredPosition = (reference?.anchoredPosition ?? new Vector2(0f, -75f)) + offset;
-
-            var image = buttonGo.GetComponent<Image>();
-            image.color = color;
-            var button = buttonGo.GetComponent<Button>();
-            button.targetGraphic = image;
-
-            var labelGo = new GameObject("m_txtLabel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
-            labelGo.transform.SetParent(buttonGo.transform, false);
-            var labelRect = labelGo.GetComponent<RectTransform>();
-            labelRect.anchorMin = Vector2.zero;
-            labelRect.anchorMax = Vector2.one;
-            labelRect.offsetMin = Vector2.zero;
-            labelRect.offsetMax = Vector2.zero;
-            var label = labelGo.GetComponent<Text>();
-            label.font = font;
-            label.fontSize = 24;
-            label.alignment = TextAnchor.MiddleCenter;
-            label.color = Color.white;
-            label.raycastTarget = false;
-            label.text = text;
-            return button;
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = new Vector2(width, height);
+            rect.anchoredPosition = new Vector2(x, y);
         }
     }
 }

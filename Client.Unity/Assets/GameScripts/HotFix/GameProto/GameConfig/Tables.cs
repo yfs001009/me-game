@@ -17,16 +17,58 @@ public partial class Tables
     /// 游戏基础规则表
     /// </summary>
     public common.TbGameRule TbGameRule {get; }
+    /// <summary>
+    /// 地图配置表：地图资源、人数范围、模式与局内对象约定
+    /// </summary>
+    public battle.TbMap TbMap {get; }
+    /// <summary>
+    /// 局内商店表：Tiled shop 层对象通过 shop_id 引用
+    /// </summary>
+    public battle.TbShop TbShop {get; }
+    /// <summary>
+    /// 局内商店商品表：定义商店售卖物品、价格和解锁条件
+    /// </summary>
+    public battle.TbShopGoods TbShopGoods {get; }
+    /// <summary>
+    /// 怪物配置表：Tiled monster 层对象通过 monster_id 引用
+    /// </summary>
+    public battle.TbMonster TbMonster {get; }
+    /// <summary>
+    /// 建筑配置表：建筑类型、预制体、占地、生命值和能力开关
+    /// </summary>
+    public battle.TbBuilding TbBuilding {get; }
+    /// <summary>
+    /// 建筑卡牌表：局内建造入口、消耗、冷却和展示说明
+    /// </summary>
+    public battle.TbBuildingLevel TbBuildingLevel {get; }
+    /// <summary>
+    /// 建筑等级表：升级消耗、生命值、攻击、范围和产出参数
+    /// </summary>
+    public battle.TbBuildingCard TbBuildingCard {get; }
 
     public Tables(System.Func<string, ByteBuf> loader)
     {
         TbGameRule = new common.TbGameRule(loader("common_tbgamerule"));
+        TbMap = new battle.TbMap(loader("battle_tbmap"));
+        TbShop = new battle.TbShop(loader("battle_tbshop"));
+        TbShopGoods = new battle.TbShopGoods(loader("battle_tbshopgoods"));
+        TbMonster = new battle.TbMonster(loader("battle_tbmonster"));
+        TbBuilding = new battle.TbBuilding(loader("battle_tbbuilding"));
+        TbBuildingLevel = new battle.TbBuildingLevel(loader("battle_tbbuildinglevel"));
+        TbBuildingCard = new battle.TbBuildingCard(loader("battle_tbbuildingcard"));
         ResolveRef();
     }
     
     private void ResolveRef()
     {
         TbGameRule.ResolveRef(this);
+        TbMap.ResolveRef(this);
+        TbShop.ResolveRef(this);
+        TbShopGoods.ResolveRef(this);
+        TbMonster.ResolveRef(this);
+        TbBuilding.ResolveRef(this);
+        TbBuildingLevel.ResolveRef(this);
+        TbBuildingCard.ResolveRef(this);
     }
 }
 

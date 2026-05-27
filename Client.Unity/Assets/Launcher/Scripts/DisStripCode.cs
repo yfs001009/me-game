@@ -27,6 +27,9 @@ public class DisStripCode : MonoBehaviour
         //UnityEngine.Graphics
         RegisterType<Mesh>();
         RegisterType<MeshRenderer>();
+        RegisterType<Material>();
+        RegisterType<Renderer>();
+        RegisterType<Shader>();
 
         //UnityEngine.Animation
         RegisterType<AnimationClip>();

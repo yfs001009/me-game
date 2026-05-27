@@ -292,6 +292,11 @@ namespace TEngine
                 return;
             }
 
+            if (!Application.isPlaying)
+            {
+                return;
+            }
+
             _entity = new GameObject("[UpdateDriver]");
             _entity.SetActive(true);
             Object.DontDestroyOnLoad(_entity);

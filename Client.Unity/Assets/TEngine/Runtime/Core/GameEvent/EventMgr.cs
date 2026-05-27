@@ -52,7 +52,7 @@ namespace TEngine
                 {
                     InterfaceWrap = callerWrap
                 };
-                _eventEntryMap.Add(typeof(T), entry);
+                _eventEntryMap[typeof(T)] = entry;
             }
         }
 

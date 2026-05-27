@@ -78,20 +78,23 @@ namespace Launcher
 
         private void OnClickUpdateBtn()
         {
-            OnUpdateClick?.Invoke();
+            var callback = OnUpdateClick;
             Close();
+            callback?.Invoke();
         }
 
         private void OnClickCancelBtn()
         {
-            OnCancelClick?.Invoke();
+            var callback = OnCancelClick;
             Close();
+            callback?.Invoke();
         }
 
         private void OnClickConfirmBtn()
         {
-            OnConfirmClick?.Invoke();
+            var callback = OnConfirmClick;
             Close();
+            callback?.Invoke();
         }
     }
 }

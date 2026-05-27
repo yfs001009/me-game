@@ -18,6 +18,7 @@ namespace GameLogic.SheepBattle.Network
         public string Token { get; private set; } = string.Empty;
         public PlayerProfileInfo Profile { get; private set; }
         public bool IsConnected { get; private set; }
+        public bool IsSessionAvailable => IsConnected && !IsRuntimeSessionDisposed();
 
         private SheepNetworkService()
         {
@@ -104,6 +105,14 @@ namespace GameLogic.SheepBattle.Network
             return response;
         }
 
+        public async FTask<G2C_StartMatchResponse> StartMatchAsync(string mode)
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_StartMatchRequest(Token, mode);
+            Log.Info($"开始匹配结果：匹配中={response.Status?.IsMatching}，预计={response.Status?.EstimatedSeconds}");
+            return response;
+        }
+
         public async FTask<G2C_CreateRoomResponse> CreateRoomAsync(string roomName, string mode, int mapId, int maxPlayers, bool isPrivate, string password)
         {
             await EnsureConnectedAsync();
@@ -128,6 +137,76 @@ namespace GameLogic.SheepBattle.Network
             return response;
         }
 
+        public async FTask<G2C_RoomDetailResponse> RequestRoomDetailAsync(int roomId)
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_RoomDetailRequest(Token, roomId);
+            Log.Info($"房间详情结果：成功={response.Success}，房间ID={roomId}，消息={response.Message}");
+            return response;
+        }
+
+        public async FTask<G2C_SetRoomReadyResponse> SetRoomReadyAsync(int roomId, bool isReady)
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_SetRoomReadyRequest(Token, roomId, isReady);
+            Log.Info($"准备状态结果：成功={response.Success}，房间ID={roomId}，IsReady={isReady}，消息={response.Message}");
+            return response;
+        }
+
+        public async FTask<G2C_StartRoomResponse> StartRoomAsync(int roomId)
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_StartRoomRequest(Token, roomId);
+            Log.Info($"开始房间结果：成功={response.Success}，房间ID={roomId}，地图={response.Battle?.MapAsset}，消息={response.Message}");
+            return response;
+        }
+
+        public async FTask<G2C_BattleSceneLoadedResponse> BattleSceneLoadedAsync(int battleId)
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_BattleSceneLoadedRequest(Token, battleId);
+            Log.Info($"战斗加载完成上报：成功={response.Success}，BattleId={battleId}，状态={response.Snapshot?.State}，消息={response.Message}");
+            return response;
+        }
+
+        public async FTask<G2C_BattleSnapshotResponse> RequestBattleSnapshotAsync(int battleId, long lastKnownTick)
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_BattleSnapshotRequest(Token, battleId, lastKnownTick);
+            return response;
+        }
+
+        public async FTask<G2C_BattleMoveCommandResponse> MoveBattlePlayerAsync(int battleId, float axisX, float axisY)
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_BattleMoveCommand(Token, battleId, axisX, axisY);
+            return response;
+        }
+
+        public async FTask<G2C_BuildCommandResponse> BuildAsync(int battleId, int buildingId, int gridX, int gridY)
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_BuildCommand(Token, battleId, buildingId, gridX, gridY);
+            Log.Info($"建造命令结果：成功={response.Success}，BattleId={battleId}，BuildingId={buildingId}，Grid={gridX},{gridY}，消息={response.Message}");
+            return response;
+        }
+
+        public async FTask<G2C_UpgradeBuildingCommandResponse> UpgradeBuildingAsync(int battleId, long buildingInstanceId)
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_UpgradeBuildingCommand(Token, battleId, buildingInstanceId);
+            Log.Info($"升级建筑结果：成功={response.Success}，BattleId={battleId}，InstanceId={buildingInstanceId}，消息={response.Message}");
+            return response;
+        }
+
+        public async FTask<G2C_RecycleBuildingCommandResponse> RecycleBuildingAsync(int battleId, long buildingInstanceId)
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_RecycleBuildingCommand(Token, battleId, buildingInstanceId);
+            Log.Info($"回收建筑结果：成功={response.Success}，BattleId={battleId}，InstanceId={buildingInstanceId}，消息={response.Message}");
+            return response;
+        }
+
         public void Dispose()
         {
             Runtime.OnDestroy();
@@ -139,9 +218,22 @@ namespace GameLogic.SheepBattle.Network
 
         private async FTask EnsureConnectedAsync()
         {
-            if (!IsConnected)
+            if (!IsConnected || IsRuntimeSessionDisposed())
             {
+                IsConnected = false;
                 await ConnectAsync();
+            }
+        }
+
+        private static bool IsRuntimeSessionDisposed()
+        {
+            try
+            {
+                return Runtime.Session == null || Runtime.Session.IsDisposed;
+            }
+            catch
+            {
+                return true;
             }
         }
 

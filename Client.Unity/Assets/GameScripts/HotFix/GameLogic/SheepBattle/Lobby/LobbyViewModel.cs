@@ -10,6 +10,7 @@ namespace GameLogic.SheepBattle.Lobby
         public int RoomCount { get; set; }
         public bool IsMatching { get; set; }
         public int MatchRoomId { get; set; }
+        public int MatchEstimatedSeconds { get; set; }
         public int JoinableRoomId { get; set; }
         public string JoinableRoomName { get; set; } = string.Empty;
         public int JoinableRoomCurrentPlayers { get; set; }

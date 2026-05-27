@@ -23,6 +23,15 @@
     <Group GroupActiveRule="EnableGroup" GroupName="Materials" GroupDesc="" AssetTags="">
       <Collector CollectPath="Assets/AssetRaw/Materials" CollectGUID="228b1547e7065d546ad0bf215fd6a276" CollectType="MainAssetCollector" AddressRule="AddressByFileName" PackRule="PackDirectory" FilterRule="CollectAll" UserData="" AssetTags="" />
     </Group>
+    <Group GroupActiveRule="EnableGroup" GroupName="Maps" GroupDesc="" AssetTags="">
+      <Collector CollectPath="Assets/AssetRaw/Maps" CollectGUID="5d7efdbf6c3f46f4f9d244d398f3b6c1" CollectType="MainAssetCollector" AddressRule="AddressByFileName" PackRule="PackDirectory" FilterRule="CollectAll" UserData="" AssetTags="" />
+    </Group>
+    <Group GroupActiveRule="EnableGroup" GroupName="MapTiles" GroupDesc="" AssetTags="">
+      <Collector CollectPath="Assets/AssetRaw/MapTiles" CollectGUID="9864250f4e4db194488d6f51f17f564e" CollectType="MainAssetCollector" AddressRule="AddressByFileName" PackRule="PackDirectory" FilterRule="CollectAll" UserData="" AssetTags="" />
+    </Group>
+    <Group GroupActiveRule="EnableGroup" GroupName="MapPrefabs" GroupDesc="" AssetTags="">
+      <Collector CollectPath="Assets/AssetRaw/MapPrefabs" CollectGUID="e6a4090f35fc4919b29e36588eac643d" CollectType="MainAssetCollector" AddressRule="AddressByGroupAndFileName" PackRule="PackDirectory" FilterRule="CollectAll" UserData="" AssetTags="" />
+    </Group>
     <Group GroupActiveRule="EnableGroup" GroupName="Scenes" GroupDesc="" AssetTags="">
       <Collector CollectPath="Assets/AssetRaw/Scenes" CollectGUID="cace6ee6539f661419b5e5f8ae1c0146" CollectType="MainAssetCollector" AddressRule="AddressByFileName" PackRule="PackDirectory" FilterRule="CollectAll" UserData="" AssetTags="" />
     </Group>

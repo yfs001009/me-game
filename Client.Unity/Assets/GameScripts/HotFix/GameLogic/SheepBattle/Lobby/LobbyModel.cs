@@ -20,6 +20,7 @@ namespace GameLogic.SheepBattle.Lobby
                 RoomCount = response?.Rooms?.Count ?? 0,
                 IsMatching = response?.MatchStatus?.IsMatching ?? false,
                 MatchRoomId = response?.MatchStatus?.AllocatedRoomId ?? 0,
+                MatchEstimatedSeconds = response?.MatchStatus?.EstimatedSeconds ?? 0,
                 JoinableRoomId = firstRoom?.RoomId ?? 0,
                 JoinableRoomName = firstRoom?.RoomName ?? string.Empty,
                 JoinableRoomCurrentPlayers = firstRoom?.CurrentPlayers ?? 0,
@@ -68,6 +69,21 @@ namespace GameLogic.SheepBattle.Lobby
             return UpdateCurrentRoom(response?.Room, fallbackRoomName, "Creating");
         }
 
+        public void UpdateMatchStatus(G2C_StartMatchResponse response)
+        {
+            if (response?.Status == null)
+            {
+                SetStatus("状态：匹配请求失败");
+                return;
+            }
+
+            LobbyView.IsMatching = response.Status.IsMatching;
+            LobbyView.MatchRoomId = response.Status.AllocatedRoomId;
+            LobbyView.MatchEstimatedSeconds = response.Status.EstimatedSeconds;
+            SetStatus($"状态：匹配中，预计 {response.Status.EstimatedSeconds} 秒");
+            GameEvent.Send(new LobbyViewChangedEvent(LobbyView));
+        }
+
         public RoomViewModel UpdateCurrentRoom(G2C_JoinRoomResponse response)
         {
             return UpdateCurrentRoom(response?.Room, LobbyView.JoinableRoomName, "Waiting");
@@ -76,6 +92,21 @@ namespace GameLogic.SheepBattle.Lobby
         public RoomViewModel UpdateCurrentRoom(G2C_LeaveRoomResponse response)
         {
             return UpdateCurrentRoom(response?.Room, string.Empty, "Waiting");
+        }
+
+        public RoomViewModel UpdateCurrentRoom(G2C_RoomDetailResponse response)
+        {
+            return UpdateCurrentRoom(response?.Room, CurrentRoom?.RoomName ?? string.Empty, CurrentRoom?.State ?? "Waiting");
+        }
+
+        public RoomViewModel UpdateCurrentRoom(G2C_SetRoomReadyResponse response)
+        {
+            return UpdateCurrentRoom(response?.Room, CurrentRoom?.RoomName ?? string.Empty, CurrentRoom?.State ?? "Waiting");
+        }
+
+        public RoomViewModel UpdateCurrentRoom(G2C_StartRoomResponse response)
+        {
+            return UpdateCurrentRoom(response?.Room, CurrentRoom?.RoomName ?? string.Empty, "Playing");
         }
 
         private RoomViewModel UpdateCurrentRoom(RoomDetailInfo room, string fallbackRoomName, string fallbackState)

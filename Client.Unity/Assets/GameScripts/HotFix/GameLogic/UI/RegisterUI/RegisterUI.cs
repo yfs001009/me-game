@@ -1,5 +1,4 @@
 using GameLogic.SheepBattle.Common;
-using GameLogic.SheepBattle.Login;
 using TEngine;
 using UnityEngine;
 using UnityEngine.UI;
@@ -20,7 +19,7 @@ namespace GameLogic
             var mask = DynamicUI.Image("m_imgMask", rectTransform, new Color(0f, 0f, 0f, 0.56f));
             DynamicUI.Stretch(DynamicUI.Rect(mask));
 
-            var panel = DynamicUI.Image("m_imgPanel", rectTransform, new Color(0.95f, 0.97f, 0.94f, 1f));
+            var panel = DynamicUI.SpriteImage("m_imgPanel", rectTransform, DynamicUI.ArtPanelPopup, Color.white);
             DynamicUI.Center(DynamicUI.Rect(panel), new Vector2(560f, 430f), Vector2.zero);
 
             var title = DynamicUI.Text("m_txtTitle", panel.transform, "注册新账号", 32, TextAnchor.MiddleCenter, Color.black, FontStyle.Bold);
@@ -33,11 +32,11 @@ namespace GameLogic
             _confirm = DynamicUI.Input("m_inputConfirm", panel.transform, "确认密码", 20, true);
             DynamicUI.Center(DynamicUI.Rect(_confirm), new Vector2(420f, 56f), new Vector2(0f, -58f));
 
-            var register = DynamicUI.Button("m_btnRegister", panel.transform, "注册", new Color(0.18f, 0.44f, 0.36f, 1f));
+            var register = DynamicUI.SkinnedButton("m_btnRegister", panel.transform, "注册", DynamicUI.ArtButtonPrimary);
             DynamicUI.Center(DynamicUI.Rect(register), new Vector2(160f, 54f), new Vector2(-96f, -146f));
             register.onClick.AddListener(OnClickRegister);
 
-            var back = DynamicUI.Button("m_btnBack", panel.transform, "返回", new Color(0.36f, 0.38f, 0.37f, 1f));
+            var back = DynamicUI.SkinnedButton("m_btnBack", panel.transform, "返回", DynamicUI.ArtButtonDanger);
             DynamicUI.Center(DynamicUI.Rect(back), new Vector2(160f, 54f), new Vector2(96f, -146f));
             back.onClick.AddListener(() => GameModule.UI.CloseUI<RegisterUI>());
         }
@@ -64,7 +63,7 @@ namespace GameLogic
                 return;
             }
 
-            LoginController.Instance.Register(account, password, string.Empty);
+            GameEvent.Get<ILoginCommand>()?.OnRegister(account, password, string.Empty);
         }
     }
 }

@@ -16,13 +16,23 @@ public sealed class CustomRoomService
     {
         lock (gate)
         {
+            RemovePlayerFromRoomsUnsafe(owner.PlayerId);
+            var requestedMapId = request.MapId <= 0 ? SheepServices.Rules.DefaultMapId : request.MapId;
+            var map = SheepServices.Rules.GetMapOrDefault(requestedMapId);
+            var mapId = map?.MapId ?? requestedMapId;
+            var minPlayers = map?.MinPlayers ?? SheepServices.Rules.CustomRoomMinPlayers;
+            var maxPlayers = map?.MaxPlayers ?? SheepServices.Rules.CustomRoomMaxPlayers;
+            var defaultPlayers = map?.RecommendedPlayers ?? SheepServices.Rules.CustomRoomDefaultPlayers;
             var room = new CustomRoomRecord
             {
                 RoomId = ++nextRoomId,
                 RoomName = string.IsNullOrWhiteSpace(request.RoomName) ? $"{owner.Nickname}的房间" : request.RoomName.Trim(),
-                Mode = string.IsNullOrWhiteSpace(request.Mode) ? "ClassicInfection" : request.Mode.Trim(),
-                MapId = request.MapId <= 0 ? 1 : request.MapId,
-                MaxPlayers = Math.Clamp(request.MaxPlayers, SheepServices.Rules.CustomRoomMinPlayers, SheepServices.Rules.CustomRoomMaxPlayers),
+                Mode = string.IsNullOrWhiteSpace(request.Mode) ? map?.Mode ?? "ClassicInfection" : request.Mode.Trim(),
+                MapId = mapId,
+                MaxPlayers = Math.Clamp(
+                    request.MaxPlayers <= 0 ? defaultPlayers : request.MaxPlayers,
+                    minPlayers,
+                    maxPlayers),
                 IsPrivate = request.IsPrivate,
                 Password = request.Password ?? string.Empty,
                 OwnerPlayerId = owner.PlayerId
@@ -65,6 +75,8 @@ public sealed class CustomRoomService
                 return (true, "已在房间中。", ToDetail(room));
             }
 
+            RemovePlayerFromOtherRoomsUnsafe(profile.PlayerId, room.RoomId);
+
             if (room.Players.Count >= room.MaxPlayers)
             {
                 Log.Warning($"加入房间失败：房间已满。玩家ID={profile.PlayerId}，房间ID={request.RoomId}");
@@ -75,6 +87,93 @@ public sealed class CustomRoomService
             room.UpdatedAtUtc = DateTimeOffset.UtcNow;
             Log.Info($"玩家加入房间：玩家ID={profile.PlayerId}，房间ID={room.RoomId}，当前人数={room.Players.Count}/{room.MaxPlayers}");
             return (true, "加入房间成功。", ToDetail(room));
+        }
+    }
+
+    public (bool Success, string Message, RoomDetailInfo? Room) GetDetail(PlayerProfileInfo profile, C2G_RoomDetailRequest request)
+    {
+        lock (gate)
+        {
+            if (!rooms.TryGetValue(request.RoomId, out var room))
+            {
+                return (false, "房间不存在。", null);
+            }
+
+            if (room.Players.All(player => player.PlayerId != profile.PlayerId))
+            {
+                return (false, "玩家不在房间中。", null);
+            }
+
+            return (true, "房间详情获取成功。", ToDetail(room));
+        }
+    }
+
+    public (bool Success, string Message, RoomDetailInfo? Room) SetReady(PlayerProfileInfo profile, C2G_SetRoomReadyRequest request)
+    {
+        lock (gate)
+        {
+            if (!rooms.TryGetValue(request.RoomId, out var room))
+            {
+                return (false, "房间不存在。", null);
+            }
+
+            var player = room.Players.FirstOrDefault(item => item.PlayerId == profile.PlayerId);
+            if (player == null)
+            {
+                return (false, "玩家不在房间中。", ToDetail(room));
+            }
+
+            if (player.IsOwner)
+            {
+                return (false, "房主不需要准备。", ToDetail(room));
+            }
+
+            player.IsReady = request.IsReady;
+            room.UpdatedAtUtc = DateTimeOffset.UtcNow;
+            Log.Info($"玩家准备状态更新：玩家ID={profile.PlayerId}，房间ID={room.RoomId}，IsReady={player.IsReady}");
+            return (true, player.IsReady ? "已准备。" : "已取消准备。", ToDetail(room));
+        }
+    }
+
+    public (bool Success, string Message, RoomDetailInfo? Room, BattleStartInfo? Battle) Start(PlayerProfileInfo profile, C2G_StartRoomRequest request)
+    {
+        lock (gate)
+        {
+            if (!rooms.TryGetValue(request.RoomId, out var room))
+            {
+                return (false, "房间不存在。", null, null);
+            }
+
+            if (room.OwnerPlayerId != profile.PlayerId)
+            {
+                return (false, "只有房主可以开始游戏。", ToDetail(room), null);
+            }
+
+            if (room.State != "Waiting")
+            {
+                return (false, "房间当前状态不能开始游戏。", ToDetail(room), null);
+            }
+
+            if (room.Players.Any(player => !player.IsOwner && !player.IsReady))
+            {
+                return (false, "还有玩家未准备。", ToDetail(room), null);
+            }
+
+            room.State = "Playing";
+            room.UpdatedAtUtc = DateTimeOffset.UtcNow;
+            var map = SheepServices.Rules.GetMapOrDefault(room.MapId);
+            var battle = new BattleStartInfo
+            {
+                BattleId = room.RoomId,
+                RoomId = room.RoomId,
+                MapId = room.MapId,
+                MapAsset = string.IsNullOrWhiteSpace(map?.MapAsset) ? $"battle_map_{room.MapId}" : map.MapAsset,
+                Mode = string.IsNullOrWhiteSpace(map?.Mode) ? room.Mode : map.Mode
+            };
+
+            SheepServices.Battles.CreateFromRoom(room, battle);
+            Log.Info($"房间开始游戏：房间ID={room.RoomId}，地图={battle.MapAsset}，人数={room.Players.Count}");
+            return (true, "开始游戏。", ToDetail(room), battle);
         }
     }
 
@@ -120,37 +219,64 @@ public sealed class CustomRoomService
     {
         lock (gate)
         {
-            var removedCount = 0;
-            foreach (var room in rooms.Values.ToList())
-            {
-                var player = room.Players.FirstOrDefault(item => item.PlayerId == playerId);
-                if (player == null)
-                {
-                    continue;
-                }
-
-                room.Players.Remove(player);
-                if (room.Players.Count == 0)
-                {
-                    rooms.Remove(room.RoomId);
-                    removedCount++;
-                    Log.Info($"玩家断线清理房间：玩家ID={playerId}，房间ID={room.RoomId}");
-                    continue;
-                }
-
-                if (player.IsOwner)
-                {
-                    var newOwner = room.Players[0];
-                    newOwner.IsOwner = true;
-                    newOwner.IsReady = true;
-                    room.OwnerPlayerId = newOwner.PlayerId;
-                }
-
-                room.UpdatedAtUtc = DateTimeOffset.UtcNow;
-            }
-
-            return removedCount;
+            return RemovePlayerFromRoomsUnsafe(playerId);
         }
+    }
+
+    private int RemovePlayerFromOtherRoomsUnsafe(long playerId, int keepRoomId)
+    {
+        var removedCount = 0;
+        foreach (var room in rooms.Values.Where(room => room.RoomId != keepRoomId).ToList())
+        {
+            if (RemovePlayerFromRoomUnsafe(room, playerId))
+            {
+                removedCount++;
+            }
+        }
+
+        return removedCount;
+    }
+
+    private int RemovePlayerFromRoomsUnsafe(long playerId)
+    {
+        var removedCount = 0;
+        foreach (var room in rooms.Values.ToList())
+        {
+            if (RemovePlayerFromRoomUnsafe(room, playerId))
+            {
+                removedCount++;
+            }
+        }
+
+        return removedCount;
+    }
+
+    private bool RemovePlayerFromRoomUnsafe(CustomRoomRecord room, long playerId)
+    {
+        var player = room.Players.FirstOrDefault(item => item.PlayerId == playerId);
+        if (player == null)
+        {
+            return false;
+        }
+
+        room.Players.Remove(player);
+        if (room.Players.Count == 0)
+        {
+            rooms.Remove(room.RoomId);
+            Log.Info($"移除玩家并清理空房间：玩家ID={playerId}，房间ID={room.RoomId}");
+            return true;
+        }
+
+        if (player.IsOwner)
+        {
+            var newOwner = room.Players[0];
+            newOwner.IsOwner = true;
+            newOwner.IsReady = true;
+            room.OwnerPlayerId = newOwner.PlayerId;
+        }
+
+        room.UpdatedAtUtc = DateTimeOffset.UtcNow;
+        return true;
     }
 
     private void CleanupExpiredWaitingRooms()

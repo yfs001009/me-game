@@ -118,6 +118,132 @@ namespace Fantasy
 			request.RoomId = roomId;
 			return (G2C_LeaveRoomResponse)await session.Call(request);
 		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_RoomDetailResponse> C2G_RoomDetailRequest(this Session session, C2G_RoomDetailRequest request)
+		{
+			return (G2C_RoomDetailResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_RoomDetailResponse> C2G_RoomDetailRequest(this Session session, string token, int roomId)
+		{
+			using var request = Fantasy.C2G_RoomDetailRequest.Create(session.Scene);
+			request.Token = token;
+			request.RoomId = roomId;
+			return (G2C_RoomDetailResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_SetRoomReadyResponse> C2G_SetRoomReadyRequest(this Session session, C2G_SetRoomReadyRequest request)
+		{
+			return (G2C_SetRoomReadyResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_SetRoomReadyResponse> C2G_SetRoomReadyRequest(this Session session, string token, int roomId, bool isReady)
+		{
+			using var request = Fantasy.C2G_SetRoomReadyRequest.Create(session.Scene);
+			request.Token = token;
+			request.RoomId = roomId;
+			request.IsReady = isReady;
+			return (G2C_SetRoomReadyResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_StartRoomResponse> C2G_StartRoomRequest(this Session session, C2G_StartRoomRequest request)
+		{
+			return (G2C_StartRoomResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_StartRoomResponse> C2G_StartRoomRequest(this Session session, string token, int roomId)
+		{
+			using var request = Fantasy.C2G_StartRoomRequest.Create(session.Scene);
+			request.Token = token;
+			request.RoomId = roomId;
+			return (G2C_StartRoomResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_BattleSceneLoadedResponse> C2G_BattleSceneLoadedRequest(this Session session, C2G_BattleSceneLoadedRequest request)
+		{
+			return (G2C_BattleSceneLoadedResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_BattleSceneLoadedResponse> C2G_BattleSceneLoadedRequest(this Session session, string token, int battleId)
+		{
+			using var request = Fantasy.C2G_BattleSceneLoadedRequest.Create(session.Scene);
+			request.Token = token;
+			request.BattleId = battleId;
+			return (G2C_BattleSceneLoadedResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_BattleSnapshotResponse> C2G_BattleSnapshotRequest(this Session session, C2G_BattleSnapshotRequest request)
+		{
+			return (G2C_BattleSnapshotResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_BattleSnapshotResponse> C2G_BattleSnapshotRequest(this Session session, string token, int battleId, long lastKnownTick)
+		{
+			using var request = Fantasy.C2G_BattleSnapshotRequest.Create(session.Scene);
+			request.Token = token;
+			request.BattleId = battleId;
+			request.LastKnownTick = lastKnownTick;
+			return (G2C_BattleSnapshotResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_BattleMoveCommandResponse> C2G_BattleMoveCommand(this Session session, C2G_BattleMoveCommand request)
+		{
+			return (G2C_BattleMoveCommandResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_BattleMoveCommandResponse> C2G_BattleMoveCommand(this Session session, string token, int battleId, float axisX, float axisY)
+		{
+			using var request = Fantasy.C2G_BattleMoveCommand.Create(session.Scene);
+			request.Token = token;
+			request.BattleId = battleId;
+			request.AxisX = axisX;
+			request.AxisY = axisY;
+			return (G2C_BattleMoveCommandResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_BuildCommandResponse> C2G_BuildCommand(this Session session, C2G_BuildCommand request)
+		{
+			return (G2C_BuildCommandResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_BuildCommandResponse> C2G_BuildCommand(this Session session, string token, int battleId, int buildingId, int gridX, int gridY)
+		{
+			using var request = Fantasy.C2G_BuildCommand.Create(session.Scene);
+			request.Token = token;
+			request.BattleId = battleId;
+			request.BuildingId = buildingId;
+			request.GridX = gridX;
+			request.GridY = gridY;
+			return (G2C_BuildCommandResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_UpgradeBuildingCommandResponse> C2G_UpgradeBuildingCommand(this Session session, C2G_UpgradeBuildingCommand request)
+		{
+			return (G2C_UpgradeBuildingCommandResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_UpgradeBuildingCommandResponse> C2G_UpgradeBuildingCommand(this Session session, string token, int battleId, long buildingInstanceId)
+		{
+			using var request = Fantasy.C2G_UpgradeBuildingCommand.Create(session.Scene);
+			request.Token = token;
+			request.BattleId = battleId;
+			request.BuildingInstanceId = buildingInstanceId;
+			return (G2C_UpgradeBuildingCommandResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_RecycleBuildingCommandResponse> C2G_RecycleBuildingCommand(this Session session, C2G_RecycleBuildingCommand request)
+		{
+			return (G2C_RecycleBuildingCommandResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_RecycleBuildingCommandResponse> C2G_RecycleBuildingCommand(this Session session, string token, int battleId, long buildingInstanceId)
+		{
+			using var request = Fantasy.C2G_RecycleBuildingCommand.Create(session.Scene);
+			request.Token = token;
+			request.BattleId = battleId;
+			request.BuildingInstanceId = buildingInstanceId;
+			return (G2C_RecycleBuildingCommandResponse)await session.Call(request);
+		}
 
    }
 }

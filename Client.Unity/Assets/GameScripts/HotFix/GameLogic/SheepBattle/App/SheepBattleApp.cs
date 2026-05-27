@@ -1,3 +1,5 @@
+using GameLogic.SheepBattle.Battle;
+using GameLogic.SheepBattle.Login;
 using GameLogic.SheepBattle.Lobby;
 using GameLogic.SheepBattle.Network;
 using TEngine;
@@ -14,6 +16,9 @@ namespace GameLogic.SheepBattle.App
         {
             Log.Info("SheepBattle hotfix app started.");
             Fantasy.GameProtoFantasyRegistrar.Register();
+            GameEvent.EventMgr.RegWrapInterface<ILoginCommand>(LoginController.Instance);
+            GameEvent.EventMgr.RegWrapInterface<ILobbyCommand>(LobbyController.Instance);
+            GameEvent.EventMgr.RegWrapInterface<IBattleCommand>(BattleController.Instance);
             SheepNetworkService.Instance.Initialize("127.0.0.1", 20000);
             GameModule.UI.ShowUIAsync<SplashUI>();
         }
@@ -29,5 +34,6 @@ namespace GameLogic.SheepBattle.App
             SheepNetworkService.Instance.Dispose();
             Log.Info("SheepBattle hotfix app released.");
         }
+
     }
 }

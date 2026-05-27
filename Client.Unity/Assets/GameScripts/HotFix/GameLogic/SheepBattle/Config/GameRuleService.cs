@@ -34,6 +34,7 @@ namespace GameLogic.SheepBattle.Config
         public int InitialTrollMinPlayers => GetInt("InitialTrollMinPlayers", 1);
         public int InitialTrollMaxPlayers => GetInt("InitialTrollMaxPlayers", 2);
         public int BattleDurationSeconds => GetInt("BattleDurationSeconds", 900);
+        public int BuildRange => GetInt("BuildRange", 4);
         public int CorePackupSeconds => GetInt("CorePackupSeconds", 8);
         public int WallRecyclePercent => GetInt("WallRecyclePercent", 25);
         public int TowerRecyclePercent => GetInt("TowerRecyclePercent", 50);

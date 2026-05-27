@@ -62,6 +62,29 @@ namespace Fantasy
                     typeof(G2C_JoinRoomResponse),
                     typeof(C2G_LeaveRoomRequest),
                     typeof(G2C_LeaveRoomResponse),
+                    typeof(C2G_RoomDetailRequest),
+                    typeof(G2C_RoomDetailResponse),
+                    typeof(C2G_SetRoomReadyRequest),
+                    typeof(G2C_SetRoomReadyResponse),
+                    typeof(C2G_StartRoomRequest),
+                    typeof(G2C_StartRoomResponse),
+                    typeof(BattleStartInfo),
+                    typeof(BattlePlayerStateInfo),
+                    typeof(BattleBuildingStateInfo),
+                    typeof(BattleAttackEventInfo),
+                    typeof(BattleSnapshotInfo),
+                    typeof(C2G_BattleSceneLoadedRequest),
+                    typeof(G2C_BattleSceneLoadedResponse),
+                    typeof(C2G_BattleSnapshotRequest),
+                    typeof(G2C_BattleSnapshotResponse),
+                    typeof(C2G_BattleMoveCommand),
+                    typeof(G2C_BattleMoveCommandResponse),
+                    typeof(C2G_BuildCommand),
+                    typeof(G2C_BuildCommandResponse),
+                    typeof(C2G_UpgradeBuildingCommand),
+                    typeof(G2C_UpgradeBuildingCommandResponse),
+                    typeof(C2G_RecycleBuildingCommand),
+                    typeof(G2C_RecycleBuildingCommandResponse),
                     typeof(RoomSummaryInfo),
                     typeof(RoomPlayerInfo),
                     typeof(RoomDetailInfo)
@@ -90,7 +113,25 @@ namespace Fantasy
                     OuterOpcode.C2G_JoinRoomRequest,
                     OuterOpcode.G2C_JoinRoomResponse,
                     OuterOpcode.C2G_LeaveRoomRequest,
-                    OuterOpcode.G2C_LeaveRoomResponse
+                    OuterOpcode.G2C_LeaveRoomResponse,
+                    OuterOpcode.C2G_RoomDetailRequest,
+                    OuterOpcode.G2C_RoomDetailResponse,
+                    OuterOpcode.C2G_SetRoomReadyRequest,
+                    OuterOpcode.G2C_SetRoomReadyResponse,
+                    OuterOpcode.C2G_StartRoomRequest,
+                    OuterOpcode.G2C_StartRoomResponse,
+                    OuterOpcode.C2G_BattleSceneLoadedRequest,
+                    OuterOpcode.G2C_BattleSceneLoadedResponse,
+                    OuterOpcode.C2G_BattleSnapshotRequest,
+                    OuterOpcode.G2C_BattleSnapshotResponse,
+                    OuterOpcode.C2G_BattleMoveCommand,
+                    OuterOpcode.G2C_BattleMoveCommandResponse,
+                    OuterOpcode.C2G_BuildCommand,
+                    OuterOpcode.G2C_BuildCommandResponse,
+                    OuterOpcode.C2G_UpgradeBuildingCommand,
+                    OuterOpcode.G2C_UpgradeBuildingCommandResponse,
+                    OuterOpcode.C2G_RecycleBuildingCommand,
+                    OuterOpcode.G2C_RecycleBuildingCommandResponse
                 };
             }
 
@@ -113,7 +154,25 @@ namespace Fantasy
                     typeof(C2G_JoinRoomRequest),
                     typeof(G2C_JoinRoomResponse),
                     typeof(C2G_LeaveRoomRequest),
-                    typeof(G2C_LeaveRoomResponse)
+                    typeof(G2C_LeaveRoomResponse),
+                    typeof(C2G_RoomDetailRequest),
+                    typeof(G2C_RoomDetailResponse),
+                    typeof(C2G_SetRoomReadyRequest),
+                    typeof(G2C_SetRoomReadyResponse),
+                    typeof(C2G_StartRoomRequest),
+                    typeof(G2C_StartRoomResponse),
+                    typeof(C2G_BattleSceneLoadedRequest),
+                    typeof(G2C_BattleSceneLoadedResponse),
+                    typeof(C2G_BattleSnapshotRequest),
+                    typeof(G2C_BattleSnapshotResponse),
+                    typeof(C2G_BattleMoveCommand),
+                    typeof(G2C_BattleMoveCommandResponse),
+                    typeof(C2G_BuildCommand),
+                    typeof(G2C_BuildCommandResponse),
+                    typeof(C2G_UpgradeBuildingCommand),
+                    typeof(G2C_UpgradeBuildingCommandResponse),
+                    typeof(C2G_RecycleBuildingCommand),
+                    typeof(G2C_RecycleBuildingCommandResponse)
                 };
             }
 
@@ -135,7 +194,16 @@ namespace Fantasy
                     OuterOpcode.C2G_StartMatchRequest,
                     OuterOpcode.C2G_CreateRoomRequest,
                     OuterOpcode.C2G_JoinRoomRequest,
-                    OuterOpcode.C2G_LeaveRoomRequest
+                    OuterOpcode.C2G_LeaveRoomRequest,
+                    OuterOpcode.C2G_RoomDetailRequest,
+                    OuterOpcode.C2G_SetRoomReadyRequest,
+                    OuterOpcode.C2G_StartRoomRequest,
+                    OuterOpcode.C2G_BattleSceneLoadedRequest,
+                    OuterOpcode.C2G_BattleSnapshotRequest,
+                    OuterOpcode.C2G_BattleMoveCommand,
+                    OuterOpcode.C2G_BuildCommand,
+                    OuterOpcode.C2G_UpgradeBuildingCommand,
+                    OuterOpcode.C2G_RecycleBuildingCommand
                 };
             }
 
@@ -150,7 +218,16 @@ namespace Fantasy
                     typeof(G2C_StartMatchResponse),
                     typeof(G2C_CreateRoomResponse),
                     typeof(G2C_JoinRoomResponse),
-                    typeof(G2C_LeaveRoomResponse)
+                    typeof(G2C_LeaveRoomResponse),
+                    typeof(G2C_RoomDetailResponse),
+                    typeof(G2C_SetRoomReadyResponse),
+                    typeof(G2C_StartRoomResponse),
+                    typeof(G2C_BattleSceneLoadedResponse),
+                    typeof(G2C_BattleSnapshotResponse),
+                    typeof(G2C_BattleMoveCommandResponse),
+                    typeof(G2C_BuildCommandResponse),
+                    typeof(G2C_UpgradeBuildingCommandResponse),
+                    typeof(G2C_RecycleBuildingCommandResponse)
                 };
             }
         }
