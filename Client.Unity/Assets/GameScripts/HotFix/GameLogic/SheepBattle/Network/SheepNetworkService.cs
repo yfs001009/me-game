@@ -1,5 +1,7 @@
 ﻿using Fantasy;
 using Fantasy.Async;
+using Fantasy.Network;
+using System.Collections.Generic;
 using TEngine;
 using Log = TEngine.Log;
 
@@ -15,10 +17,18 @@ namespace GameLogic.SheepBattle.Network
 
         public string Host { get; private set; } = string.Empty;
         public int Port { get; private set; }
+        public int BattlePort { get; private set; }
+        public string BattleHost { get; private set; } = string.Empty;
+        public string BattleProtocol { get; private set; } = "KCP";
         public string Token { get; private set; } = string.Empty;
         public PlayerProfileInfo Profile { get; private set; }
         public bool IsConnected { get; private set; }
         public bool IsSessionAvailable => IsConnected && !IsRuntimeSessionDisposed();
+        public bool IsBattleSessionAvailable => battleSession != null && !battleSession.IsDisposed;
+
+        private Scene battleScene;
+        private Session battleSession;
+        private bool isBattleConnected;
 
         private SheepNetworkService()
         {
@@ -28,7 +38,9 @@ namespace GameLogic.SheepBattle.Network
         {
             Host = host;
             Port = port;
-            Log.Info($"网络模块初始化完成，目标服务器：{host}:{port}");
+            BattleHost = host;
+            BattlePort = port + 1;
+            Log.Info($"网络模块初始化完成，目标服务器：{host}:{port}，战斗服务器：{host}:{BattlePort}");
         }
 
         public async FTask ConnectAsync()
@@ -113,10 +125,11 @@ namespace GameLogic.SheepBattle.Network
             return response;
         }
 
-        public async FTask<G2C_CreateRoomResponse> CreateRoomAsync(string roomName, string mode, int mapId, int maxPlayers, bool isPrivate, string password)
+        public async FTask<G2C_CreateRoomResponse> CreateRoomAsync(string roomName, string mode, int mapId, int maxPlayers, bool isPrivate, string password, IReadOnlyList<int> selectedBuildingCardIds)
         {
             await EnsureConnectedAsync();
-            var response = await Runtime.Session.C2G_CreateRoomRequest(Token, roomName, mode, mapId, maxPlayers, isPrivate, password);
+            var cards = selectedBuildingCardIds == null ? new List<int>() : new List<int>(selectedBuildingCardIds);
+            var response = await Runtime.Session.C2G_CreateRoomRequest(Token, roomName, mode, mapId, maxPlayers, isPrivate, password, cards);
             Log.Info($"创建房间成功：房间ID={response.Room?.Summary?.RoomId}");
             return response;
         }
@@ -141,6 +154,7 @@ namespace GameLogic.SheepBattle.Network
         {
             await EnsureConnectedAsync();
             var response = await Runtime.Session.C2G_RoomDetailRequest(Token, roomId);
+            CacheBattleEndpoint(response.Battle);
             Log.Info($"房间详情结果：成功={response.Success}，房间ID={roomId}，消息={response.Message}");
             return response;
         }
@@ -157,58 +171,60 @@ namespace GameLogic.SheepBattle.Network
         {
             await EnsureConnectedAsync();
             var response = await Runtime.Session.C2G_StartRoomRequest(Token, roomId);
+            CacheBattleEndpoint(response.Battle);
             Log.Info($"开始房间结果：成功={response.Success}，房间ID={roomId}，地图={response.Battle?.MapAsset}，消息={response.Message}");
             return response;
         }
 
         public async FTask<G2C_BattleSceneLoadedResponse> BattleSceneLoadedAsync(int battleId)
         {
-            await EnsureConnectedAsync();
-            var response = await Runtime.Session.C2G_BattleSceneLoadedRequest(Token, battleId);
+            await EnsureBattleConnectedAsync();
+            var response = await battleSession.C2G_BattleSceneLoadedRequest(Token, battleId);
             Log.Info($"战斗加载完成上报：成功={response.Success}，BattleId={battleId}，状态={response.Snapshot?.State}，消息={response.Message}");
             return response;
         }
 
         public async FTask<G2C_BattleSnapshotResponse> RequestBattleSnapshotAsync(int battleId, long lastKnownTick)
         {
-            await EnsureConnectedAsync();
-            var response = await Runtime.Session.C2G_BattleSnapshotRequest(Token, battleId, lastKnownTick);
+            await EnsureBattleConnectedAsync();
+            var response = await battleSession.C2G_BattleSnapshotRequest(Token, battleId, lastKnownTick);
             return response;
         }
 
         public async FTask<G2C_BattleMoveCommandResponse> MoveBattlePlayerAsync(int battleId, float axisX, float axisY)
         {
-            await EnsureConnectedAsync();
-            var response = await Runtime.Session.C2G_BattleMoveCommand(Token, battleId, axisX, axisY);
+            await EnsureBattleConnectedAsync();
+            var response = await battleSession.C2G_BattleMoveCommand(Token, battleId, axisX, axisY);
             return response;
         }
 
         public async FTask<G2C_BuildCommandResponse> BuildAsync(int battleId, int buildingId, int gridX, int gridY)
         {
-            await EnsureConnectedAsync();
-            var response = await Runtime.Session.C2G_BuildCommand(Token, battleId, buildingId, gridX, gridY);
+            await EnsureBattleConnectedAsync();
+            var response = await battleSession.C2G_BuildCommand(Token, battleId, buildingId, gridX, gridY);
             Log.Info($"建造命令结果：成功={response.Success}，BattleId={battleId}，BuildingId={buildingId}，Grid={gridX},{gridY}，消息={response.Message}");
             return response;
         }
 
         public async FTask<G2C_UpgradeBuildingCommandResponse> UpgradeBuildingAsync(int battleId, long buildingInstanceId)
         {
-            await EnsureConnectedAsync();
-            var response = await Runtime.Session.C2G_UpgradeBuildingCommand(Token, battleId, buildingInstanceId);
+            await EnsureBattleConnectedAsync();
+            var response = await battleSession.C2G_UpgradeBuildingCommand(Token, battleId, buildingInstanceId);
             Log.Info($"升级建筑结果：成功={response.Success}，BattleId={battleId}，InstanceId={buildingInstanceId}，消息={response.Message}");
             return response;
         }
 
         public async FTask<G2C_RecycleBuildingCommandResponse> RecycleBuildingAsync(int battleId, long buildingInstanceId)
         {
-            await EnsureConnectedAsync();
-            var response = await Runtime.Session.C2G_RecycleBuildingCommand(Token, battleId, buildingInstanceId);
+            await EnsureBattleConnectedAsync();
+            var response = await battleSession.C2G_RecycleBuildingCommand(Token, battleId, buildingInstanceId);
             Log.Info($"回收建筑结果：成功={response.Success}，BattleId={battleId}，InstanceId={buildingInstanceId}，消息={response.Message}");
             return response;
         }
 
         public void Dispose()
         {
+            DisposeBattleSession();
             Runtime.OnDestroy();
             IsConnected = false;
             Token = string.Empty;
@@ -223,6 +239,71 @@ namespace GameLogic.SheepBattle.Network
                 IsConnected = false;
                 await ConnectAsync();
             }
+        }
+
+        private async FTask EnsureBattleConnectedAsync()
+        {
+            await EnsureConnectedAsync();
+            if (IsBattleSessionAvailable)
+            {
+                return;
+            }
+
+            DisposeBattleSession();
+            battleScene = await Scene.Create();
+            isBattleConnected = false;
+            battleSession = Runtime.CreateSession(
+                battleScene,
+                BattleHost,
+                BattlePort,
+                GetBattleNetworkProtocol(),
+                false,
+                5000,
+                OnBattleConnected,
+                OnBattleConnectFailed,
+                OnBattleDisconnected);
+        }
+
+        public void DisposeBattleSession()
+        {
+            if (battleScene != null)
+            {
+                battleScene.Dispose();
+                battleScene = null;
+                battleSession = null;
+            }
+
+            isBattleConnected = false;
+        }
+
+        private void CacheBattleEndpoint(BattleStartInfo battle)
+        {
+            if (battle == null)
+            {
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(battle.BattleHost))
+            {
+                BattleHost = battle.BattleHost;
+            }
+
+            if (battle.BattlePort > 0)
+            {
+                BattlePort = battle.BattlePort;
+            }
+
+            if (!string.IsNullOrWhiteSpace(battle.BattleProtocol))
+            {
+                BattleProtocol = battle.BattleProtocol;
+            }
+        }
+
+        private FantasyRuntime.NetworkProtocolType GetBattleNetworkProtocol()
+        {
+            return string.Equals(BattleProtocol, "TCP", System.StringComparison.OrdinalIgnoreCase)
+                ? FantasyRuntime.NetworkProtocolType.TCP
+                : FantasyRuntime.NetworkProtocolType.KCP;
         }
 
         private static bool IsRuntimeSessionDisposed()
@@ -253,6 +334,24 @@ namespace GameLogic.SheepBattle.Network
         {
             IsConnected = false;
             Log.Warning("服务器连接已断开。");
+        }
+
+        private void OnBattleConnected()
+        {
+            isBattleConnected = true;
+            Log.Info($"连接战斗服务器成功：{BattleHost}:{BattlePort}");
+        }
+
+        private void OnBattleConnectFailed()
+        {
+            isBattleConnected = false;
+            Log.Error($"连接战斗服务器失败：{BattleHost}:{BattlePort}，战斗请求将不可用。");
+        }
+
+        private void OnBattleDisconnected()
+        {
+            isBattleConnected = false;
+            Log.Warning("战斗服务器连接已断开。");
         }
     }
 }

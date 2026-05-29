@@ -372,6 +372,7 @@ public uint OpCode() { return OuterOpcode.G2C_StartMatchResponse; }
             MaxPlayers = default;
             IsPrivate = default;
             Password = default;
+            SelectedBuildingCardIds.Clear();
 #if FANTASY_NET || FANTASY_UNITY
             GetScene().MessagePoolComponent.Return<C2G_CreateRoomRequest>(this);
 #endif
@@ -393,6 +394,8 @@ public uint OpCode() { return OuterOpcode.C2G_CreateRoomRequest; }
         public bool IsPrivate { get; set; }
         [ProtoMember(7)]
         public string Password { get; set; }
+        [ProtoMember(8)]
+        public List<int> SelectedBuildingCardIds { get; set; } = new List<int>();
     }
     [ProtoContract]
     public partial class G2C_CreateRoomResponse : AMessage, IResponse
@@ -715,6 +718,9 @@ public uint OpCode() { return OuterOpcode.G2C_StartRoomResponse; }
             MapId = default;
             MapAsset = default;
             Mode = default;
+            BattleHost = default;
+            BattlePort = default;
+            BattleProtocol = default;
 #if FANTASY_NET || FANTASY_UNITY
             GetScene().MessagePoolComponent.Return<BattleStartInfo>(this);
 #endif
@@ -729,6 +735,12 @@ public uint OpCode() { return OuterOpcode.G2C_StartRoomResponse; }
         public string MapAsset { get; set; }
         [ProtoMember(5)]
         public string Mode { get; set; }
+        [ProtoMember(6)]
+        public string BattleHost { get; set; }
+        [ProtoMember(7)]
+        public int BattlePort { get; set; }
+        [ProtoMember(8)]
+        public string BattleProtocol { get; set; }
     }
     /// <summary>
     /// 战斗玩家同步状态。
@@ -754,6 +766,7 @@ public uint OpCode() { return OuterOpcode.G2C_StartRoomResponse; }
             MoveSpeed = default;
             Hp = default;
             MaxHp = default;
+            SelectedBuildingCardIds.Clear();
 #if FANTASY_NET || FANTASY_UNITY
             GetScene().MessagePoolComponent.Return<BattlePlayerStateInfo>(this);
 #endif
@@ -780,6 +793,8 @@ public uint OpCode() { return OuterOpcode.G2C_StartRoomResponse; }
         public int Hp { get; set; }
         [ProtoMember(11)]
         public int MaxHp { get; set; }
+        [ProtoMember(12)]
+        public List<int> SelectedBuildingCardIds { get; set; } = new List<int>();
     }
     /// <summary>
     /// 战斗建筑同步状态。
@@ -1312,6 +1327,7 @@ public uint OpCode() { return OuterOpcode.G2C_RecycleBuildingCommandResponse; }
             Level = default;
             IsOwner = default;
             IsReady = default;
+            SelectedBuildingCardIds.Clear();
 #if FANTASY_NET || FANTASY_UNITY
             GetScene().MessagePoolComponent.Return<RoomPlayerInfo>(this);
 #endif
@@ -1326,6 +1342,8 @@ public uint OpCode() { return OuterOpcode.G2C_RecycleBuildingCommandResponse; }
         public bool IsOwner { get; set; }
         [ProtoMember(5)]
         public bool IsReady { get; set; }
+        [ProtoMember(6)]
+        public List<int> SelectedBuildingCardIds { get; set; } = new List<int>();
     }
     /// <summary>
     /// 房间详情。

@@ -2,21 +2,23 @@
 using System.Text;
 using Fantasy;
 using Hotfix.Shared;
+using Fantasy.Entitas;
 
 namespace Hotfix.Auth.Service;
 
 /// <summary>
-/// 账号与会话服务。当前为内存实现，遵守 Fantasy Hotfix 层调用方式；后续替换为 Redis + DB。
+/// 账号与会话服务。当前为单进程内存实现，后续迁移到 Data Scene 后再替换为 Redis + DB。
+/// 业务失败通过返回值交给 Handler 写入响应，避免用异常承载可预期的登录/Token 校验失败。
 /// </summary>
 public sealed class AuthService
 {
     private readonly object gate = new();
-    private readonly Dictionary<string, AccountRecord> accountsByName = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, PlayerAccountEntity> accountsByName = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, long> tokenToPlayerId = new();
-    private readonly Dictionary<long, AccountRecord> accountsById = new();
+    private readonly Dictionary<long, PlayerAccountEntity> accountsById = new();
     private long nextPlayerId = 10000;
 
-    public (bool Success, string Message) Register(string account, string password, string nickname)
+    public (bool Success, string Message) Register(Scene scene, string account, string password, string nickname)
     {
         lock (gate)
         {
@@ -35,13 +37,11 @@ public sealed class AuthService
                 return (false, "账号已存在。 ");
             }
 
-            var record = new AccountRecord
-            {
-                PlayerId = ++nextPlayerId,
-                Account = account,
-                PasswordHash = Hash(password),
-                Nickname = string.IsNullOrWhiteSpace(nickname) ? string.Empty : nickname.Trim()
-            };
+            var record = Entity.Create<PlayerAccountEntity>(scene, id: ++nextPlayerId, isPool: false, isRunEvent: true);
+            record.PlayerId = record.Id;
+            record.Account = account;
+            record.PasswordHash = Hash(password);
+            record.Nickname = string.IsNullOrWhiteSpace(nickname) ? string.Empty : nickname.Trim();
             accountsByName.Add(account, record);
             accountsById.Add(record.PlayerId, record);
             Log.Info($"玩家注册成功：玩家ID={record.PlayerId}，账号={record.Account}，昵称={record.Nickname}");
@@ -49,7 +49,7 @@ public sealed class AuthService
         }
     }
 
-    public (string Token, PlayerProfileInfo Profile) Login(string account, string password)
+    public (bool Success, string Message, string Token, PlayerProfileInfo Profile) Login(Scene scene, string account, string password)
     {
         lock (gate)
         {
@@ -57,34 +57,47 @@ public sealed class AuthService
             if (!accountsByName.TryGetValue(account, out var record))
             {
                 Log.Info($"账号不存在，自动注册新玩家：账号={account}");
-                Register(account, password, string.Empty);
+                var registerResult = Register(scene, account, password, string.Empty);
+                if (!registerResult.Success)
+                {
+                    return (false, registerResult.Message, string.Empty, new PlayerProfileInfo());
+                }
+
                 record = accountsByName[account];
             }
 
             if (record.PasswordHash != Hash(password))
             {
                 Log.Warning($"登录失败：密码错误。账号={account}");
-                throw new UnauthorizedAccessException("账号或密码错误。 ");
+                return (false, "账号或密码错误。", string.Empty, new PlayerProfileInfo());
             }
 
             var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
             tokenToPlayerId[token] = record.PlayerId;
+            var session = record.GetOrAddComponent<PlayerSessionComponent>();
+            session.Token = token;
+            session.PlayerId = record.PlayerId;
+            session.LoginAtUtc = DateTimeOffset.UtcNow;
             Log.Info($"玩家登录成功：玩家ID={record.PlayerId}，账号={record.Account}，昵称={record.Nickname}");
-            return (token, ToProfile(record));
+            return (true, "登录成功。", token, ToProfile(record));
         }
     }
 
-    public PlayerProfileInfo RequireProfile(string token)
+    public bool TryRequireProfile(string token, out PlayerProfileInfo profile, out string message)
     {
         lock (gate)
         {
+            profile = new PlayerProfileInfo();
+            message = string.Empty;
             if (string.IsNullOrWhiteSpace(token) || !tokenToPlayerId.TryGetValue(token, out var playerId) || !accountsById.TryGetValue(playerId, out var record))
             {
                 Log.Warning("会话校验失败：Token无效或已过期。");
-                throw new UnauthorizedAccessException("登录状态已失效。 ");
+                message = "登录状态已失效。";
+                return false;
             }
 
-            return ToProfile(record);
+            profile = ToProfile(record);
+            return true;
         }
     }
 
@@ -95,7 +108,7 @@ public sealed class AuthService
             if (string.IsNullOrWhiteSpace(token) || !tokenToPlayerId.TryGetValue(token, out var playerId) || !accountsById.TryGetValue(playerId, out var record))
             {
                 Log.Warning("设置昵称失败：Token无效或已过期。");
-                throw new UnauthorizedAccessException("登录状态已失效。 ");
+                return (false, "登录状态已失效。", new PlayerProfileInfo());
             }
 
             nickname = Normalize(nickname);
@@ -118,7 +131,7 @@ public sealed class AuthService
         return Convert.ToHexString(bytes);
     }
 
-    private static PlayerProfileInfo ToProfile(AccountRecord record)
+    private static PlayerProfileInfo ToProfile(PlayerAccountEntity record)
     {
         return new PlayerProfileInfo
         {

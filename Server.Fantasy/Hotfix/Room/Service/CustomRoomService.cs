@@ -1,5 +1,6 @@
 ﻿using Fantasy;
 using Hotfix.Shared;
+using Fantasy.Entitas;
 
 namespace Hotfix.Room.Service;
 
@@ -8,11 +9,13 @@ namespace Hotfix.Room.Service;
 /// </summary>
 public sealed class CustomRoomService
 {
+    private const int MaxSelectedBuildingCards = 6;
+
     private readonly object gate = new();
-    private readonly Dictionary<int, CustomRoomRecord> rooms = new();
+    private readonly Dictionary<int, RoomEntity> rooms = new();
     private int nextRoomId = 2000;
 
-    public RoomDetailInfo Create(PlayerProfileInfo owner, C2G_CreateRoomRequest request)
+    public RoomDetailInfo Create(Scene scene, PlayerProfileInfo owner, C2G_CreateRoomRequest request)
     {
         lock (gate)
         {
@@ -23,21 +26,19 @@ public sealed class CustomRoomService
             var minPlayers = map?.MinPlayers ?? SheepServices.Rules.CustomRoomMinPlayers;
             var maxPlayers = map?.MaxPlayers ?? SheepServices.Rules.CustomRoomMaxPlayers;
             var defaultPlayers = map?.RecommendedPlayers ?? SheepServices.Rules.CustomRoomDefaultPlayers;
-            var room = new CustomRoomRecord
-            {
-                RoomId = ++nextRoomId,
-                RoomName = string.IsNullOrWhiteSpace(request.RoomName) ? $"{owner.Nickname}的房间" : request.RoomName.Trim(),
-                Mode = string.IsNullOrWhiteSpace(request.Mode) ? map?.Mode ?? "ClassicInfection" : request.Mode.Trim(),
-                MapId = mapId,
-                MaxPlayers = Math.Clamp(
-                    request.MaxPlayers <= 0 ? defaultPlayers : request.MaxPlayers,
-                    minPlayers,
-                    maxPlayers),
-                IsPrivate = request.IsPrivate,
-                Password = request.Password ?? string.Empty,
-                OwnerPlayerId = owner.PlayerId
-            };
-            room.Players.Add(ToRoomPlayer(owner, true));
+            var room = Entity.Create<RoomEntity>(scene, id: ++nextRoomId, isPool: false, isRunEvent: true);
+            room.RoomId = (int)room.Id;
+            room.RoomName = string.IsNullOrWhiteSpace(request.RoomName) ? $"{owner.Nickname}的房间" : request.RoomName.Trim();
+            room.Mode = string.IsNullOrWhiteSpace(request.Mode) ? map?.Mode ?? "ClassicInfection" : request.Mode.Trim();
+            room.MapId = mapId;
+            room.MaxPlayers = Math.Clamp(
+                request.MaxPlayers <= 0 ? defaultPlayers : request.MaxPlayers,
+                minPlayers,
+                maxPlayers);
+            room.IsPrivate = request.IsPrivate;
+            room.Password = request.Password ?? string.Empty;
+            room.OwnerPlayerId = owner.PlayerId;
+            room.Players.Add(ToRoomPlayer(owner, true, request.SelectedBuildingCardIds));
             rooms.Add(room.RoomId, room);
             Log.Info($"房间创建成功：房间ID={room.RoomId}，房主ID={owner.PlayerId}，房间名={room.RoomName}，模式={room.Mode}，地图={room.MapId}");
             return ToDetail(room);
@@ -83,7 +84,7 @@ public sealed class CustomRoomService
                 return (false, "房间已满。", null);
             }
 
-            room.Players.Add(ToRoomPlayer(profile, false));
+            room.Players.Add(ToRoomPlayer(profile, false, null));
             room.UpdatedAtUtc = DateTimeOffset.UtcNow;
             Log.Info($"玩家加入房间：玩家ID={profile.PlayerId}，房间ID={room.RoomId}，当前人数={room.Players.Count}/{room.MaxPlayers}");
             return (true, "加入房间成功。", ToDetail(room));
@@ -105,6 +106,14 @@ public sealed class CustomRoomService
             }
 
             return (true, "房间详情获取成功。", ToDetail(room));
+        }
+    }
+
+    public BattleStartInfo? GetBattleByRoom(int roomId)
+    {
+        lock (gate)
+        {
+            return rooms.TryGetValue(roomId, out var room) ? room.Battle : null;
         }
     }
 
@@ -168,10 +177,13 @@ public sealed class CustomRoomService
                 RoomId = room.RoomId,
                 MapId = room.MapId,
                 MapAsset = string.IsNullOrWhiteSpace(map?.MapAsset) ? $"battle_map_{room.MapId}" : map.MapAsset,
-                Mode = string.IsNullOrWhiteSpace(map?.Mode) ? room.Mode : map.Mode
+                Mode = string.IsNullOrWhiteSpace(map?.Mode) ? room.Mode : map.Mode,
+                BattleHost = "127.0.0.1",
+                BattlePort = 20001,
+                BattleProtocol = "KCP"
             };
 
-            SheepServices.Battles.CreateFromRoom(room, battle);
+            room.Battle = battle;
             Log.Info($"房间开始游戏：房间ID={room.RoomId}，地图={battle.MapAsset}，人数={room.Players.Count}");
             return (true, "开始游戏。", ToDetail(room), battle);
         }
@@ -251,7 +263,7 @@ public sealed class CustomRoomService
         return removedCount;
     }
 
-    private bool RemovePlayerFromRoomUnsafe(CustomRoomRecord room, long playerId)
+    private bool RemovePlayerFromRoomUnsafe(RoomEntity room, long playerId)
     {
         var player = room.Players.FirstOrDefault(item => item.PlayerId == playerId);
         if (player == null)
@@ -297,9 +309,9 @@ public sealed class CustomRoomService
         }
     }
 
-    private static RoomPlayerInfo ToRoomPlayer(PlayerProfileInfo profile, bool owner)
+    private static RoomPlayerInfo ToRoomPlayer(PlayerProfileInfo profile, bool owner, IReadOnlyCollection<int>? selectedBuildingCardIds)
     {
-        return new RoomPlayerInfo
+        var player = new RoomPlayerInfo
         {
             PlayerId = profile.PlayerId,
             Nickname = profile.Nickname,
@@ -307,16 +319,18 @@ public sealed class CustomRoomService
             IsOwner = owner,
             IsReady = owner
         };
+        player.SelectedBuildingCardIds.AddRange(NormalizeSelectedBuildingCards(selectedBuildingCardIds));
+        return player;
     }
 
-    private static RoomDetailInfo ToDetail(CustomRoomRecord room)
+    private static RoomDetailInfo ToDetail(RoomEntity room)
     {
         var detail = new RoomDetailInfo { Summary = ToSummary(room) };
         detail.Players.AddRange(room.Players.Select(ClonePlayer));
         return detail;
     }
 
-    private static RoomSummaryInfo ToSummary(CustomRoomRecord room)
+    private static RoomSummaryInfo ToSummary(RoomEntity room)
     {
         return new RoomSummaryInfo
         {
@@ -333,7 +347,7 @@ public sealed class CustomRoomService
 
     private static RoomPlayerInfo ClonePlayer(RoomPlayerInfo source)
     {
-        return new RoomPlayerInfo
+        var player = new RoomPlayerInfo
         {
             PlayerId = source.PlayerId,
             Nickname = source.Nickname,
@@ -341,5 +355,28 @@ public sealed class CustomRoomService
             IsOwner = source.IsOwner,
             IsReady = source.IsReady
         };
+        player.SelectedBuildingCardIds.AddRange(source.SelectedBuildingCardIds);
+        return player;
+    }
+
+    private static List<int> NormalizeSelectedBuildingCards(IReadOnlyCollection<int>? selectedBuildingCardIds)
+    {
+        var selected = selectedBuildingCardIds?
+            .Where(cardId => cardId > 0)
+            .Distinct()
+            .Take(MaxSelectedBuildingCards)
+            .ToList() ?? new List<int>();
+
+        if (selected.Count > 0)
+        {
+            return selected;
+        }
+
+        return Hotfix.Config.ConfigSystem.Instance.Tables.TbBuildingCard.DataList
+            .OrderBy(card => card.SortOrder)
+            .ThenBy(card => card.CardId)
+            .Take(MaxSelectedBuildingCards)
+            .Select(card => card.CardId)
+            .ToList();
     }
 }

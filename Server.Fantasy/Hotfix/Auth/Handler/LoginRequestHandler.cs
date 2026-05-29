@@ -14,21 +14,11 @@ public sealed class LoginRequestHandler : MessageRPC<C2G_LoginRequest, G2C_Login
     protected override async FTask Run(Session session, C2G_LoginRequest request, G2C_LoginResponse response, Action reply)
     {
         Log.Info($"收到登录请求：账号={request.Account}");
-        try
-        {
-            var result = SheepServices.Auth.Login(request.Account, request.Password);
-            response.Success = true;
-            response.Message = "登录成功。";
-            response.Token = result.Token;
-            response.Profile = result.Profile;
-        }
-        catch (UnauthorizedAccessException exception)
-        {
-            response.Success = false;
-            response.Message = exception.Message;
-            response.Token = string.Empty;
-            response.Profile = new PlayerProfileInfo();
-        }
+        var result = SheepServices.Auth.Login(session.Scene, request.Account, request.Password);
+        response.Success = result.Success;
+        response.Message = result.Message;
+        response.Token = result.Token;
+        response.Profile = result.Profile;
         await FTask.CompletedTask;
     }
 }

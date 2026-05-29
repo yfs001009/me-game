@@ -122,7 +122,12 @@ namespace GameLogic
             }
 
             ClearSpawned(_spawnedBuildCards);
+            var profile = SheepNetworkService.Instance.Profile;
+            var loadoutCardIds = BattleController.Instance.CurrentSnapshot?.Players
+                .FirstOrDefault(player => player.PlayerId == profile?.PlayerId)?
+                .SelectedBuildingCardIds;
             var cards = ConfigSystem.Instance.Tables.TbBuildingCard.DataList
+                .Where(card => loadoutCardIds == null || loadoutCardIds.Count == 0 || loadoutCardIds.Contains(card.CardId))
                 .OrderBy(card => card.SortOrder)
                 .ThenBy(card => card.CardId)
                 .ToList();
@@ -190,9 +195,9 @@ namespace GameLogic
                 return;
             }
 
-            ClearSpawned(_spawnedAvatars);
             if (snapshot == null)
             {
+                DeactivateFrom(_spawnedAvatars, 0);
                 return;
             }
 
@@ -200,16 +205,17 @@ namespace GameLogic
             var teammates = snapshot.Players.Where(player => SameCamp(player.Camp, myCamp)).ToList();
             for (var i = 0; i < teammates.Count; i++)
             {
-                CreateAvatar(teammates[i], me != null && teammates[i].PlayerId == me.PlayerId);
+                RefreshAvatar(i, teammates[i], me != null && teammates[i].PlayerId == me.PlayerId);
             }
+
+            DeactivateFrom(_spawnedAvatars, teammates.Count);
         }
 
-        private void CreateAvatar(Fantasy.BattlePlayerStateInfo player, bool isMe)
+        private void RefreshAvatar(int index, Fantasy.BattlePlayerStateInfo player, bool isMe)
         {
-            var instance = Object.Instantiate(_avatarTemplate.gameObject, _teammateAvatarRoot, false);
+            var instance = GetOrCreatePooled(_spawnedAvatars, index, _avatarTemplate.gameObject, _teammateAvatarRoot);
             instance.name = $"m_avatar_{player.PlayerId}";
             instance.SetActive(true);
-            _spawnedAvatars.Add(instance);
 
             var image = instance.GetComponent<Image>();
             if (image != null)
@@ -222,6 +228,7 @@ namespace GameLogic
 
             var button = instance.GetComponent<Button>() ?? instance.AddComponent<Button>();
             button.targetGraphic = image;
+            button.onClick.RemoveAllListeners();
             var playerId = player.PlayerId;
             button.onClick.AddListener(() => BattleController.Instance.FocusPlayer(playerId));
         }
@@ -254,7 +261,7 @@ namespace GameLogic
             var selected = BattleController.Instance.GetSelectedBuilding();
             if (selected == null || BattleController.Instance.IsBuildMode)
             {
-                ClearSpawned(_spawnedOperationButtons);
+                DeactivateFrom(_spawnedOperationButtons, 0);
                 _lastOperationBuildingId = 0;
                 _lastOperationSignature = string.Empty;
                 SetText(_txtBuildingInfo, string.Empty);
@@ -272,30 +279,33 @@ namespace GameLogic
                 return;
             }
 
-            ClearSpawned(_spawnedOperationButtons);
             _lastOperationBuildingId = selected.InstanceId;
             _lastOperationSignature = signature;
+            var buttonIndex = 0;
 
-            CreateOperationButton("信息", () => SetText(_txtBuildingInfo, FormatBuildingInfo(selected, config, true)));
+            RefreshOperationButton(buttonIndex++, "信息", () => SetText(_txtBuildingInfo, FormatBuildingInfo(selected, config, true)));
             if (canUpgrade)
             {
-                CreateOperationButton("升级", () => GameEvent.Get<IBattleCommand>()?.OnUpgradeBuilding(selected.InstanceId));
+                RefreshOperationButton(buttonIndex++, "升级", () => GameEvent.Get<IBattleCommand>()?.OnUpgradeBuilding(selected.InstanceId));
             }
 
             if (isOwner)
             {
-                CreateOperationButton("回收", () => GameEvent.Get<IBattleCommand>()?.OnRecycleBuilding(selected.InstanceId));
+                RefreshOperationButton(buttonIndex++, "回收", () => GameEvent.Get<IBattleCommand>()?.OnRecycleBuilding(selected.InstanceId));
             }
+
+            DeactivateFrom(_spawnedOperationButtons, buttonIndex);
         }
 
-        private void CreateOperationButton(string label, UnityEngine.Events.UnityAction onClick)
+        private void RefreshOperationButton(int index, string label, UnityEngine.Events.UnityAction onClick)
         {
-            var instance = Object.Instantiate(_buildingOperationButtonTemplate.gameObject, _buildingOperationButtonRoot, false);
+            var instance = GetOrCreatePooled(_spawnedOperationButtons, index, _buildingOperationButtonTemplate.gameObject, _buildingOperationButtonRoot);
             instance.name = $"m_btnOperation_{label}";
             instance.SetActive(true);
-            _spawnedOperationButtons.Add(instance);
             SetChildText(instance.transform, "m_txtLabel", label);
-            instance.GetComponent<Button>().onClick.AddListener(onClick);
+            var button = instance.GetComponent<Button>();
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(onClick);
         }
 
         private static bool CanUpgrade(Fantasy.BattleBuildingStateInfo selected, BuildingConfig config, bool isOwner)
@@ -343,6 +353,29 @@ namespace GameLogic
             }
 
             spawned.Clear();
+        }
+
+        private static GameObject GetOrCreatePooled(List<GameObject> pool, int index, GameObject template, Transform parent)
+        {
+            while (pool.Count <= index)
+            {
+                var item = Object.Instantiate(template, parent, false);
+                item.SetActive(false);
+                pool.Add(item);
+            }
+
+            return pool[index];
+        }
+
+        private static void DeactivateFrom(List<GameObject> pool, int startIndex)
+        {
+            for (var i = startIndex; i < pool.Count; i++)
+            {
+                if (pool[i] != null)
+                {
+                    pool[i].SetActive(false);
+                }
+            }
         }
 
         private static bool IsElf(Fantasy.BattlePlayerStateInfo player)

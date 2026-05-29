@@ -79,7 +79,7 @@ namespace Fantasy
 			return (G2C_CreateRoomResponse)await session.Call(request);
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static async FTask<G2C_CreateRoomResponse> C2G_CreateRoomRequest(this Session session, string token, string roomName, string mode, int mapId, int maxPlayers, bool isPrivate, string password)
+		public static async FTask<G2C_CreateRoomResponse> C2G_CreateRoomRequest(this Session session, string token, string roomName, string mode, int mapId, int maxPlayers, bool isPrivate, string password, List<int> selectedBuildingCardIds)
 		{
 			using var request = Fantasy.C2G_CreateRoomRequest.Create(session.Scene);
 			request.Token = token;
@@ -89,6 +89,7 @@ namespace Fantasy
 			request.MaxPlayers = maxPlayers;
 			request.IsPrivate = isPrivate;
 			request.Password = password;
+			request.SelectedBuildingCardIds = selectedBuildingCardIds;
 			return (G2C_CreateRoomResponse)await session.Call(request);
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

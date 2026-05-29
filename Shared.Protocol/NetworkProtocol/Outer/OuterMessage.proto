@@ -95,6 +95,7 @@ message C2G_CreateRoomRequest // IRequest,G2C_CreateRoomResponse
     int32 MaxPlayers = 5;
     bool IsPrivate = 6;
     string Password = 7;
+    repeated int32 SelectedBuildingCardIds = 8;
 }
 message G2C_CreateRoomResponse // IResponse
 {
@@ -178,6 +179,9 @@ message BattleStartInfo
     int32 MapId = 3;
     string MapAsset = 4;
     string Mode = 5;
+    string BattleHost = 6;
+    int32 BattlePort = 7;
+    string BattleProtocol = 8;
 }
 
 /// 战斗玩家同步状态。
@@ -194,6 +198,7 @@ message BattlePlayerStateInfo
     float MoveSpeed = 9;
     int32 Hp = 10;
     int32 MaxHp = 11;
+    repeated int32 SelectedBuildingCardIds = 12;
 }
 
 /// 战斗建筑同步状态。
@@ -341,6 +346,7 @@ message RoomPlayerInfo
     int32 Level = 3;
     bool IsOwner = 4;
     bool IsReady = 5;
+    repeated int32 SelectedBuildingCardIds = 6;
 }
 
 /// 房间详情。

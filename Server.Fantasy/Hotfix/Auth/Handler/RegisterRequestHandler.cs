@@ -14,7 +14,7 @@ public sealed class RegisterRequestHandler : MessageRPC<C2G_RegisterRequest, G2C
     protected override async FTask Run(Session session, C2G_RegisterRequest request, G2C_RegisterResponse response, Action reply)
     {
         Log.Info($"收到注册请求：账号={request.Account}，昵称={request.Nickname}");
-        var result = SheepServices.Auth.Register(request.Account, request.Password, request.Nickname);
+        var result = SheepServices.Auth.Register(session.Scene, request.Account, request.Password, request.Nickname);
         response.Success = result.Success;
         response.Message = result.Message;
         await FTask.CompletedTask;

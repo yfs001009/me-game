@@ -241,18 +241,8 @@ namespace GameLogic
             var label = button.GetComponentInChildren<Text>(true);
             if (label == null)
             {
-                var labelGo = new GameObject("m_txtLabel", typeof(RectTransform), typeof(Text));
-                labelGo.transform.SetParent(button.transform, false);
-                var rect = labelGo.GetComponent<RectTransform>();
-                rect.anchorMin = Vector2.zero;
-                rect.anchorMax = Vector2.one;
-                rect.offsetMin = Vector2.zero;
-                rect.offsetMax = Vector2.zero;
-                label = labelGo.GetComponent<Text>();
-                label.alignment = TextAnchor.MiddleCenter;
-                label.color = Color.black;
-                label.raycastTarget = false;
-                label.font = font;
+                Log.Warning($"按钮缺少 m_txtLabel 文本节点：{button.name}");
+                return;
             }
 
             label.text = text;

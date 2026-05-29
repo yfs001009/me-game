@@ -2,6 +2,7 @@
 using Fantasy.Async;
 using Fantasy.Network;
 using Fantasy.Network.Interface;
+using Hotfix.Room;
 using Hotfix.Shared;
 
 namespace Hotfix.Room.Handler;
@@ -13,9 +14,15 @@ public sealed class CreateRoomRequestHandler : MessageRPC<C2G_CreateRoomRequest,
 {
     protected override async FTask Run(Session session, C2G_CreateRoomRequest request, G2C_CreateRoomResponse response, Action reply)
     {
-        var profile = SheepServices.Auth.RequireProfile(request.Token);
-        response.Room = SheepServices.Rooms.Create(profile, request);
+        if (!SheepServices.Auth.TryRequireProfile(request.Token, out var profile, out _))
+        {
+            response.ErrorCode = 401;
+            await FTask.CompletedTask;
+            return;
+        }
+
+        var result = await RoomSceneGateway.Create(session.Scene, profile, request);
+        response.Room = result.Room;
         Log.Info($"玩家创建房间请求完成：玩家ID={profile.PlayerId}，房间ID={response.Room?.Summary?.RoomId}");
-        await FTask.CompletedTask;
     }
 }

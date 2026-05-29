@@ -13,7 +13,13 @@ public sealed class StartMatchRequestHandler : MessageRPC<C2G_StartMatchRequest,
 {
     protected override async FTask Run(Session session, C2G_StartMatchRequest request, G2C_StartMatchResponse response, Action reply)
     {
-        var profile = SheepServices.Auth.RequireProfile(request.Token);
+        if (!SheepServices.Auth.TryRequireProfile(request.Token, out var profile, out _))
+        {
+            response.ErrorCode = 401;
+            await FTask.CompletedTask;
+            return;
+        }
+
         response.Status = SheepServices.Match.Start(profile, request.Mode);
         await FTask.CompletedTask;
     }

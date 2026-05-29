@@ -2,6 +2,7 @@ using Fantasy;
 using Fantasy.Async;
 using Fantasy.Network;
 using Fantasy.Network.Interface;
+using Hotfix.Battle;
 using Hotfix.Shared;
 
 namespace Hotfix.Battle.Handler;
@@ -10,15 +11,20 @@ public sealed class BattleSceneLoadedRequestHandler : MessageRPC<C2G_BattleScene
 {
     protected override async FTask Run(Session session, C2G_BattleSceneLoadedRequest request, G2C_BattleSceneLoadedResponse response, Action reply)
     {
-        var profile = SheepServices.Auth.RequireProfile(request.Token);
-        var result = SheepServices.Battles.MarkSceneLoaded(profile, request.BattleId);
+        if (!SheepServices.Auth.TryRequireProfile(request.Token, out var profile, out var message))
+        {
+            response.Success = false;
+            response.Message = message;
+            await FTask.CompletedTask;
+            return;
+        }
+
+        var result = await BattleSceneGateway.SceneLoaded(session.Scene, profile, request);
         response.Success = result.Success;
         response.Message = result.Message;
         if (result.Snapshot != null)
         {
             response.Snapshot = result.Snapshot;
         }
-
-        await FTask.CompletedTask;
     }
 }

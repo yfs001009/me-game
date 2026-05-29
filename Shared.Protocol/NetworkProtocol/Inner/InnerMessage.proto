@@ -1,2 +1,182 @@
 syntax = "proto3";
 package Sining.Message;
+
+import "Outer/OuterMessage.proto";
+
+message G2Room_ListWaitingRoomsRequest // IAddressRequest,Room2G_ListWaitingRoomsResponse
+{
+}
+message Room2G_ListWaitingRoomsResponse // IAddressResponse
+{
+    repeated RoomSummaryInfo Rooms = 1;
+}
+
+message G2Room_CreateRoomRequest // IAddressRequest,Room2G_CreateRoomResponse
+{
+    PlayerProfileInfo Owner = 1;
+    string RoomName = 2;
+    string Mode = 3;
+    int32 MapId = 4;
+    int32 MaxPlayers = 5;
+    bool IsPrivate = 6;
+    string Password = 7;
+    repeated int32 SelectedBuildingCardIds = 8;
+}
+message Room2G_CreateRoomResponse // IAddressResponse
+{
+    RoomDetailInfo Room = 1;
+}
+
+message G2Room_JoinRoomRequest // IAddressRequest,Room2G_JoinRoomResponse
+{
+    PlayerProfileInfo Profile = 1;
+    int32 RoomId = 2;
+    string Password = 3;
+}
+message Room2G_JoinRoomResponse // IAddressResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    RoomDetailInfo Room = 3;
+}
+
+message G2Room_LeaveRoomRequest // IAddressRequest,Room2G_LeaveRoomResponse
+{
+    PlayerProfileInfo Profile = 1;
+    int32 RoomId = 2;
+}
+message Room2G_LeaveRoomResponse // IAddressResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    RoomDetailInfo Room = 3;
+}
+
+message G2Room_RoomDetailRequest // IAddressRequest,Room2G_RoomDetailResponse
+{
+    PlayerProfileInfo Profile = 1;
+    int32 RoomId = 2;
+}
+message Room2G_RoomDetailResponse // IAddressResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    RoomDetailInfo Room = 3;
+    BattleStartInfo Battle = 4;
+}
+
+message G2Room_SetRoomReadyRequest // IAddressRequest,Room2G_SetRoomReadyResponse
+{
+    PlayerProfileInfo Profile = 1;
+    int32 RoomId = 2;
+    bool IsReady = 3;
+}
+message Room2G_SetRoomReadyResponse // IAddressResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    RoomDetailInfo Room = 3;
+}
+
+message G2Room_StartRoomRequest // IAddressRequest,Room2G_StartRoomResponse
+{
+    PlayerProfileInfo Profile = 1;
+    int32 RoomId = 2;
+}
+message Room2G_StartRoomResponse // IAddressResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    RoomDetailInfo Room = 3;
+    BattleStartInfo Battle = 4;
+}
+
+message Room2Battle_CreateBattleRequest // IAddressRequest,Battle2Room_CreateBattleResponse
+{
+    RoomDetailInfo Room = 1;
+    BattleStartInfo Battle = 2;
+}
+message Battle2Room_CreateBattleResponse // IAddressResponse
+{
+    BattleStartInfo Battle = 1;
+}
+
+message G2Battle_SceneLoadedRequest // IAddressRequest,Battle2G_SceneLoadedResponse
+{
+    PlayerProfileInfo Profile = 1;
+    int32 BattleId = 2;
+}
+message Battle2G_SceneLoadedResponse // IAddressResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    BattleSnapshotInfo Snapshot = 3;
+}
+
+message G2Battle_SnapshotRequest // IAddressRequest,Battle2G_SnapshotResponse
+{
+    PlayerProfileInfo Profile = 1;
+    int32 BattleId = 2;
+    int64 LastKnownTick = 3;
+}
+message Battle2G_SnapshotResponse // IAddressResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    BattleSnapshotInfo Snapshot = 3;
+}
+
+message G2Battle_MoveRequest // IAddressRequest,Battle2G_MoveResponse
+{
+    PlayerProfileInfo Profile = 1;
+    int32 BattleId = 2;
+    float AxisX = 3;
+    float AxisY = 4;
+}
+message Battle2G_MoveResponse // IAddressResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    BattleSnapshotInfo Snapshot = 3;
+}
+
+message G2Battle_BuildRequest // IAddressRequest,Battle2G_BuildResponse
+{
+    PlayerProfileInfo Profile = 1;
+    int32 BattleId = 2;
+    int32 BuildingId = 3;
+    int32 GridX = 4;
+    int32 GridY = 5;
+}
+message Battle2G_BuildResponse // IAddressResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    BattleSnapshotInfo Snapshot = 3;
+}
+
+message G2Battle_UpgradeBuildingRequest // IAddressRequest,Battle2G_UpgradeBuildingResponse
+{
+    PlayerProfileInfo Profile = 1;
+    int32 BattleId = 2;
+    int64 BuildingInstanceId = 3;
+}
+message Battle2G_UpgradeBuildingResponse // IAddressResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    BattleSnapshotInfo Snapshot = 3;
+}
+
+message G2Battle_RecycleBuildingRequest // IAddressRequest,Battle2G_RecycleBuildingResponse
+{
+    PlayerProfileInfo Profile = 1;
+    int32 BattleId = 2;
+    int64 BuildingInstanceId = 3;
+}
+message Battle2G_RecycleBuildingResponse // IAddressResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    BattleSnapshotInfo Snapshot = 3;
+}

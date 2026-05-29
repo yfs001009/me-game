@@ -2,6 +2,7 @@ using Fantasy;
 using Fantasy.Async;
 using Fantasy.Network;
 using Fantasy.Network.Interface;
+using Hotfix.Room;
 using Hotfix.Shared;
 
 namespace Hotfix.Room.Handler;
@@ -13,14 +14,20 @@ public sealed class JoinRoomRequestHandler : MessageRPC<C2G_JoinRoomRequest, G2C
 {
     protected override async FTask Run(Session session, C2G_JoinRoomRequest request, G2C_JoinRoomResponse response, Action reply)
     {
-        var profile = SheepServices.Auth.RequireProfile(request.Token);
-        var result = SheepServices.Rooms.Join(profile, request);
+        if (!SheepServices.Auth.TryRequireProfile(request.Token, out var profile, out var message))
+        {
+            response.Success = false;
+            response.Message = message;
+            await FTask.CompletedTask;
+            return;
+        }
+
+        var result = await RoomSceneGateway.Join(session.Scene, profile, request);
         response.Success = result.Success;
         response.Message = result.Message;
         if (result.Room != null)
         {
             response.Room = result.Room;
         }
-        await FTask.CompletedTask;
     }
 }

@@ -1,5 +1,6 @@
 using Fantasy;
 using GameConfig.battle;
+using Fantasy.Entitas;
 using Hotfix.Config;
 using Hotfix.Shared;
 using System.Globalization;
@@ -23,43 +24,41 @@ public sealed class BattleService
     private const string TrollCamp = "Troll";
 
     private readonly object gate = new();
-    private readonly Dictionary<int, BattleRecord> battles = new();
+    private readonly Dictionary<int, BattleEntity> battles = new();
     private readonly Dictionary<string, List<SpawnArea>> spawnAreaCache = new();
     private readonly Dictionary<string, MapRuleData> mapRuleCache = new();
     private readonly Random random = new();
     private long nextBuildingInstanceId = 100000;
     private long nextAttackEventId = 1;
 
-    public BattleStartInfo CreateFromRoom(CustomRoomRecord room, BattleStartInfo startInfo)
+    public BattleStartInfo CreateFromRoom(Scene scene, RoomDetailInfo room, BattleStartInfo startInfo)
     {
         lock (gate)
         {
-            var battle = new BattleRecord
-            {
-                BattleId = startInfo.BattleId,
-                RoomId = startInfo.RoomId,
-                MapId = startInfo.MapId,
-                MapAsset = startInfo.MapAsset,
-                Mode = startInfo.Mode,
-                State = "Loading",
-                LastTickAtUtc = DateTimeOffset.UtcNow
-            };
+            var battle = Entity.Create<BattleEntity>(scene, id: startInfo.BattleId, isPool: false, isRunEvent: true);
+            battle.BattleId = startInfo.BattleId;
+            battle.RoomId = startInfo.RoomId;
+            battle.MapId = startInfo.MapId;
+            battle.MapAsset = startInfo.MapAsset;
+            battle.Mode = startInfo.Mode;
+            battle.State = "Loading";
+            battle.LastTickAtUtc = DateTimeOffset.UtcNow;
 
             var mapRules = GetMapRules(battle.MapAsset);
             for (var i = 0; i < room.Players.Count; i++)
             {
                 var player = room.Players[i];
                 var spawn = GetRandomSpawn(mapRules.SpawnAreas, i);
-                battle.Players.Add(new BattlePlayerRecord
-                {
-                    PlayerId = player.PlayerId,
-                    Nickname = player.Nickname,
-                    Camp = ElfCamp,
-                    PosX = spawn.X,
-                    PosY = spawn.Y,
-                    Hp = ElfMaxHp,
-                    MaxHp = ElfMaxHp
-                });
+                var battlePlayer = Entity.Create<BattlePlayerEntity>(scene, id: player.PlayerId, isPool: false, isRunEvent: true);
+                battlePlayer.PlayerId = player.PlayerId;
+                battlePlayer.Nickname = player.Nickname;
+                battlePlayer.Camp = ElfCamp;
+                battlePlayer.PosX = spawn.X;
+                battlePlayer.PosY = spawn.Y;
+                battlePlayer.Hp = ElfMaxHp;
+                battlePlayer.MaxHp = ElfMaxHp;
+                battlePlayer.SelectedBuildingCardIds.AddRange(player.SelectedBuildingCardIds);
+                battle.Players.Add(battlePlayer);
             }
 
             battles[battle.BattleId] = battle;
@@ -181,6 +180,11 @@ public sealed class BattleService
                 return (false, "只有精灵可以建造。", ToSnapshot(battle));
             }
 
+            if (!CanBuildFromLoadout(player, card.CardId))
+            {
+                return (false, "未携带该建筑卡。", ToSnapshot(battle));
+            }
+
             var width = Math.Max(building.FootprintWidth, 1);
             var height = Math.Max(building.FootprintHeight, 1);
             var mapRules = GetMapRules(battle.MapAsset);
@@ -218,20 +222,19 @@ public sealed class BattleService
 
             player.Gold -= card.CostGold;
             player.Wood -= card.CostWood;
-            battle.Buildings.Add(new BattleBuildingRecord
-            {
-                InstanceId = ++nextBuildingInstanceId,
-                OwnerPlayerId = profile.PlayerId,
-                BuildingId = request.BuildingId,
-                Level = 1,
-                GridX = request.GridX,
-                GridY = request.GridY,
-                Width = width,
-                Height = height,
-                Hp = level.Hp > 0 ? level.Hp : building.BaseHp,
-                MaxHp = level.Hp > 0 ? level.Hp : building.BaseHp,
-                LastEffectTick = battle.Tick
-            });
+            var buildingEntity = Entity.Create<BattleBuildingEntity>(battle.Scene, id: ++nextBuildingInstanceId, isPool: false, isRunEvent: true);
+            buildingEntity.InstanceId = buildingEntity.Id;
+            buildingEntity.OwnerPlayerId = profile.PlayerId;
+            buildingEntity.BuildingId = request.BuildingId;
+            buildingEntity.Level = 1;
+            buildingEntity.GridX = request.GridX;
+            buildingEntity.GridY = request.GridY;
+            buildingEntity.Width = width;
+            buildingEntity.Height = height;
+            buildingEntity.Hp = level.Hp > 0 ? level.Hp : building.BaseHp;
+            buildingEntity.MaxHp = level.Hp > 0 ? level.Hp : building.BaseHp;
+            buildingEntity.LastEffectTick = battle.Tick;
+            battle.Buildings.Add(buildingEntity);
 
             AdvanceTick(battle, true);
             return (true, "建造成功。", ToSnapshot(battle));
@@ -327,13 +330,13 @@ public sealed class BattleService
         }
     }
 
-    private static bool TryGetBattleAndPlayer(PlayerProfileInfo profile, int battleId, out BattleRecord battle, out BattlePlayerRecord player, out string error)
+    private bool TryGetBattleAndPlayer(PlayerProfileInfo profile, int battleId, out BattleEntity battle, out BattlePlayerEntity player, out string error)
     {
         battle = null!;
         player = null!;
         error = string.Empty;
 
-        if (!SheepServices.Battles.battles.TryGetValue(battleId, out battle!))
+        if (!battles.TryGetValue(battleId, out battle!))
         {
             error = "战斗不存在。";
             return false;
@@ -349,7 +352,7 @@ public sealed class BattleService
         return true;
     }
 
-    private static bool TryGetRunningBattleAndPlayer(PlayerProfileInfo profile, int battleId, out BattleRecord battle, out BattlePlayerRecord player, out string error)
+    private bool TryGetRunningBattleAndPlayer(PlayerProfileInfo profile, int battleId, out BattleEntity battle, out BattlePlayerEntity player, out string error)
     {
         if (!TryGetBattleAndPlayer(profile, battleId, out battle, out player, out error))
         {
@@ -365,7 +368,7 @@ public sealed class BattleService
         return true;
     }
 
-    private void AdvanceTick(BattleRecord battle, bool forceOneTick = false)
+    private void AdvanceTick(BattleEntity battle, bool forceOneTick = false)
     {
         var now = DateTimeOffset.UtcNow;
         TrySelectTroll(battle, now);
@@ -380,7 +383,7 @@ public sealed class BattleService
         }
     }
 
-    private static void ResolvePendingTowerHits(BattleRecord battle)
+    private static void ResolvePendingTowerHits(BattleEntity battle)
     {
         for (var i = battle.PendingTowerHits.Count - 1; i >= 0; i--)
         {
@@ -402,7 +405,7 @@ public sealed class BattleService
         }
     }
 
-    private void ApplyBuildingEffects(BattleRecord battle)
+    private void ApplyBuildingEffects(BattleEntity battle)
     {
         foreach (var building in battle.Buildings)
         {
@@ -450,7 +453,7 @@ public sealed class BattleService
         }
     }
 
-    private void ApplyTowerAttack(BattleRecord battle, BattleBuildingRecord building, BuildingLevelConfig? level)
+    private void ApplyTowerAttack(BattleEntity battle, BattleBuildingEntity building, BuildingLevelConfig? level)
     {
         if (level == null || level.Attack <= 0 || level.AttackRange <= 0 || level.AttackIntervalMs <= 0)
         {
@@ -512,7 +515,7 @@ public sealed class BattleService
         building.LastEffectTick += Math.Max(1, elapsedTicks / intervalTicks) * intervalTicks;
     }
 
-    private static bool IsOccupied(BattleRecord battle, int gridX, int gridY, int width, int height, long ignoreInstanceId)
+    private static bool IsOccupied(BattleEntity battle, int gridX, int gridY, int width, int height, long ignoreInstanceId)
     {
         foreach (var building in battle.Buildings)
         {
@@ -533,7 +536,7 @@ public sealed class BattleService
         return false;
     }
 
-    private static bool IsTrollOccupyingArea(BattleRecord battle, int gridX, int gridY, int width, int height)
+    private static bool IsTrollOccupyingArea(BattleEntity battle, int gridX, int gridY, int width, int height)
     {
         foreach (var player in battle.Players)
         {
@@ -556,7 +559,7 @@ public sealed class BattleService
         return false;
     }
 
-    private static bool IsAnyBuildCellInRange(BattlePlayerRecord player, int gridX, int gridY, int width, int height)
+    private static bool IsAnyBuildCellInRange(BattlePlayerEntity player, int gridX, int gridY, int width, int height)
     {
         var closestX = Math.Clamp(player.PosX, gridX, gridX + width);
         var closestY = Math.Clamp(player.PosY, gridY, gridY + height);
@@ -565,7 +568,7 @@ public sealed class BattleService
         return MathF.Sqrt(dx * dx + dy * dy) <= SheepServices.Rules.BuildRange;
     }
 
-    private static void LogBuildRangeCheck(string prefix, BattlePlayerRecord player, int gridX, int gridY, int width, int height)
+    private static void LogBuildRangeCheck(string prefix, BattlePlayerEntity player, int gridX, int gridY, int width, int height)
     {
         var closestX = Math.Clamp(player.PosX, gridX, gridX + width);
         var closestY = Math.Clamp(player.PosY, gridY, gridY + height);
@@ -575,7 +578,7 @@ public sealed class BattleService
         Log.Info($"{prefix}: Player=({player.PosX:0.00},{player.PosY:0.00}), Grid=({gridX},{gridY}), Size=({width},{height}), Closest=({closestX:0.00},{closestY:0.00}), Distance={distance:0.00}, Range={SheepServices.Rules.BuildRange}");
     }
 
-    private static bool IsPositionBlocked(BattleRecord battle, MapRuleData mapRules, float posX, float posY)
+    private static bool IsPositionBlocked(BattleEntity battle, MapRuleData mapRules, float posX, float posY)
     {
         var gridX = (int)MathF.Floor(posX);
         var gridY = (int)MathF.Floor(posY);
@@ -624,7 +627,12 @@ public sealed class BattleService
         return ConfigSystem.Instance.Tables.TbBuildingCard.DataList.FirstOrDefault(item => item.BuildingId == buildingId);
     }
 
-    private void TrySelectTroll(BattleRecord battle, DateTimeOffset now)
+    private static bool CanBuildFromLoadout(BattlePlayerEntity player, int cardId)
+    {
+        return player.SelectedBuildingCardIds.Count <= 0 || player.SelectedBuildingCardIds.Contains(cardId);
+    }
+
+    private void TrySelectTroll(BattleEntity battle, DateTimeOffset now)
     {
         if (battle.State != "Running" || battle.TrollSelected)
         {
@@ -829,7 +837,7 @@ public sealed class BattleService
             : normalized;
     }
 
-    private static BattleSnapshotInfo ToSnapshot(BattleRecord battle)
+    private static BattleSnapshotInfo ToSnapshot(BattleEntity battle)
     {
         var snapshot = new BattleSnapshotInfo
         {
@@ -837,20 +845,7 @@ public sealed class BattleService
             Tick = battle.Tick,
             State = battle.State
         };
-        snapshot.Players.AddRange(battle.Players.Select(player => new BattlePlayerStateInfo
-        {
-            PlayerId = player.PlayerId,
-            Nickname = player.Nickname,
-            Camp = player.Camp,
-            SceneLoaded = player.SceneLoaded,
-            Gold = player.Gold,
-            Wood = player.Wood,
-            PosX = player.PosX,
-            PosY = player.PosY,
-            MoveSpeed = player.MoveSpeed,
-            Hp = player.Hp,
-            MaxHp = player.MaxHp
-        }));
+        snapshot.Players.AddRange(battle.Players.Select(ToPlayerState));
         snapshot.Buildings.AddRange(battle.Buildings.Select(building => new BattleBuildingStateInfo
         {
             InstanceId = building.InstanceId,
@@ -875,6 +870,26 @@ public sealed class BattleService
             Damage = item.Damage
         }));
         return snapshot;
+    }
+
+    private static BattlePlayerStateInfo ToPlayerState(BattlePlayerEntity player)
+    {
+        var state = new BattlePlayerStateInfo
+        {
+            PlayerId = player.PlayerId,
+            Nickname = player.Nickname,
+            Camp = player.Camp,
+            SceneLoaded = player.SceneLoaded,
+            Gold = player.Gold,
+            Wood = player.Wood,
+            PosX = player.PosX,
+            PosY = player.PosY,
+            MoveSpeed = player.MoveSpeed,
+            Hp = player.Hp,
+            MaxHp = player.MaxHp
+        };
+        state.SelectedBuildingCardIds.AddRange(player.SelectedBuildingCardIds);
+        return state;
     }
 
     private readonly record struct SpawnArea(float X, float Y, float Width, float Height);

@@ -2,6 +2,7 @@ using Fantasy;
 using Fantasy.Async;
 using GameLogic.SheepBattle.Battle;
 using GameLogic.SheepBattle.Common;
+using GameLogic.SheepBattle.Loadout;
 using GameLogic.SheepBattle.Network;
 using TEngine;
 using Log = TEngine.Log;
@@ -188,13 +189,13 @@ namespace GameLogic.SheepBattle.Lobby
 
         public async FTask<RoomViewModel> CreateRoomAsync(string roomName)
         {
-            var response = await SheepNetworkService.Instance.CreateRoomAsync(roomName, "ClassicInfection", 1, 4, false, string.Empty);
+            var response = await SheepNetworkService.Instance.CreateRoomAsync(roomName, "ClassicInfection", 1, 4, false, string.Empty, LoadoutService.Instance.GetSelectedBuildingCardIds());
             return Model.UpdateCurrentRoom(response, roomName);
         }
 
         public async FTask<RoomViewModel> CreateRoomAsync(string roomName, int mapId, int maxPlayers, bool isPrivate, string password)
         {
-            var response = await SheepNetworkService.Instance.CreateRoomAsync(roomName, "ClassicInfection", mapId, maxPlayers, isPrivate, password);
+            var response = await SheepNetworkService.Instance.CreateRoomAsync(roomName, "ClassicInfection", mapId, maxPlayers, isPrivate, password, LoadoutService.Instance.GetSelectedBuildingCardIds());
             return Model.UpdateCurrentRoom(response, roomName);
         }
 
