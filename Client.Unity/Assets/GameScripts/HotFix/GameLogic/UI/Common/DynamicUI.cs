@@ -7,6 +7,7 @@ namespace GameLogic
     {
         public const string ArtLoginBackground = "Assets/AssetRaw/UI/Art/login_bg_winter_camp.png";
         public const string ArtLobbyBackground = "Assets/AssetRaw/UI/Art/lobby_bg_fortified_camp.png";
+        public const string ArtLobbyPanel = "Assets/AssetRaw/UI/Art/lobby_panel.png";
         public const string ArtPanelPopup = "Assets/AssetRaw/UI/Art/panel_popup_common.png";
         public const string ArtPanelRoom = "Assets/AssetRaw/UI/Art/panel_room_large.png";
         public const string ArtButtonPrimary = "Assets/AssetRaw/UI/Art/button_primary_green.png";
@@ -15,6 +16,9 @@ namespace GameLogic
         public const string ArtInputFrame = "Assets/AssetRaw/UI/Art/input_frame_parchment.png";
         public const string ArtRoomPlayerSlot = "Assets/AssetRaw/UI/Art/room_player_slot_cartoon.png";
         public const string ArtTitleRibbon = "Assets/AssetRaw/UI/Art/title_ribbon_sheep_battle.png";
+        public const string ArtIconCoin = "Assets/AssetRaw/UI/Art/icon/ic_coin.png";
+        public const string ArtIconGem = "Assets/AssetRaw/UI/Art/icon/ic_gem.png";
+        public const string ArtIconCrystal = "Assets/AssetRaw/UI/Art/icon/ic_crystal.png";
 
         public static Font Font => Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 

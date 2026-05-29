@@ -6,6 +6,7 @@ using UnityEngine.UI;
 public static class SheepBattleUIPrefabBuilder
 {
     private const string UiDir = "Assets/AssetRaw/UI";
+    private const string LobbyPath = UiDir + "/LobbyUI.prefab";
     private const string CreateRoomPath = UiDir + "/CreateRoomUI.prefab";
     private const string RoomPlayerSlotPath = UiDir + "/RoomPlayerSlot.prefab";
 
@@ -19,13 +20,28 @@ public static class SheepBattleUIPrefabBuilder
                 return;
             }
 
-            if (File.Exists(CreateRoomPath) && File.Exists(RoomPlayerSlotPath))
+            var hasLobby = IsLobbyPrefabComplete();
+            var hasRoomPrefabs = File.Exists(CreateRoomPath) && File.Exists(RoomPlayerSlotPath);
+            if (hasLobby && hasRoomPrefabs)
             {
                 return;
             }
 
-            Debug.Log("SheepBattle UI prefabs are missing. Building CreateRoomUI and RoomPlayerSlot prefabs.");
-            BuildAll();
+            if (!hasLobby)
+            {
+                Debug.Log("SheepBattle LobbyUI prefab is missing or outdated. Building LobbyUI prefab.");
+                BuildLobbyUI();
+            }
+
+            if (!hasRoomPrefabs)
+            {
+                Debug.Log("SheepBattle room UI prefabs are missing. Building room prefabs.");
+                BuildCreateRoomUI();
+                BuildRoomUI();
+                BuildRoomPlayerSlot();
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+            }
         };
     }
 
@@ -33,11 +49,84 @@ public static class SheepBattleUIPrefabBuilder
     public static void BuildAll()
     {
         Directory.CreateDirectory(UiDir);
+        BuildLobbyUI();
         BuildCreateRoomUI();
         BuildRoomUI();
         BuildRoomPlayerSlot();
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
+    }
+
+    [MenuItem("SheepBattle/Build Lobby UI Prefab")]
+    public static void BuildLobbyUI()
+    {
+        var root = CreateRoot("LobbyUI");
+        var bg = CreateImage("m_imgBackground", root.transform, Color.white);
+        Stretch(bg.rectTransform);
+        ApplySprite(bg, "Assets/AssetRaw/UI/Art/lobby_bg_fortified_camp.png", Image.Type.Simple);
+
+        var topBar = CreateRect("m_topBar", root.transform);
+        SetStretchTop(topBar, 28f, -98f, -28f, 82f);
+
+        var playerPanel = CreateImage("m_playerPanel", topBar, new Color(0f, 0f, 0f, 0.40f));
+        SetAnchor(playerPanel.rectTransform, 0f, 0.5f, 0f, 0.5f, 170f, 0f, 340f, 72f);
+
+        var avatar = CreateImage("m_imgAvatar", playerPanel.transform, new Color(0.95f, 0.73f, 0.38f, 1f));
+        SetAnchor(avatar.rectTransform, 0f, 0.5f, 0f, 0.5f, 42f, 0f, 58f, 58f);
+        var avatarText = CreateText("m_txtAvatar", avatar.transform, 26, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white);
+        Stretch(avatarText.rectTransform);
+        avatarText.text = "羊";
+
+        var playerName = CreateText("m_txtPlayerName", playerPanel.transform, 21, FontStyle.Bold, TextAnchor.MiddleLeft, Color.white);
+        SetAnchor(playerName.rectTransform, 0f, 0.5f, 1f, 0.5f, 120f, 12f, -146f, 30f);
+        playerName.text = "玩家";
+
+        var level = CreateText("m_txtLevel", playerPanel.transform, 17, FontStyle.Bold, TextAnchor.MiddleLeft, new Color(1f, 0.89f, 0.52f, 1f));
+        SetAnchor(level.rectTransform, 0f, 0.5f, 1f, 0.5f, 120f, -15f, -146f, 26f);
+        level.text = "Lv.1";
+
+        CreateCurrency("m_currencyGold", topBar, "Assets/AssetRaw/UI/Art/icon/ic_coin.png", "12,800", -438f);
+        CreateCurrency("m_currencyGem", topBar, "Assets/AssetRaw/UI/Art/icon/ic_gem.png", "680", -248f);
+        CreateCurrency("m_currencyCrystal", topBar, "Assets/AssetRaw/UI/Art/icon/ic_crystal.png", "96", -58f);
+
+        CreateSmallButton("m_btnMail", topBar, "邮件", -190f);
+        CreateSmallButton("m_btnSettings", topBar, "设置", -64f);
+
+        var mainPanel = CreateImage("m_mainPanel", root.transform, new Color(1f, 0.96f, 0.82f, 0.88f));
+        SetCenter(mainPanel.rectTransform, 0f, 18f, 680f, 300f);
+        ApplySprite(mainPanel, "Assets/AssetRaw/UI/Art/lobby_panel.png", Image.Type.Sliced);
+
+        var title = CreateText("m_txtTitle", mainPanel.transform, 34, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(0.12f, 0.10f, 0.08f, 1f));
+        SetAnchor(title.rectTransform, 0.5f, 1f, 0.5f, 1f, 0f, -58f, 400f, 52f);
+        title.text = "羊群战场";
+
+        var summary = CreateText("m_txtLobbySummary", mainPanel.transform, 22, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(0.12f, 0.10f, 0.08f, 1f));
+        SetCenter(summary.rectTransform, 0f, 36f, 560f, 72f);
+        summary.text = "大厅数据加载中";
+
+        var status = CreateText("m_txtStatus", mainPanel.transform, 19, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(0.37f, 0.31f, 0.22f, 1f));
+        SetCenter(status.rectTransform, 0f, -30f, 560f, 44f);
+        status.text = "状态：等待进入大厅";
+
+        CreateStat("m_statRooms", mainPanel.transform, "房间", "- 个", -190f);
+        CreateStat("m_statMatch", mainPanel.transform, "匹配", "空闲", 0f);
+        CreateStat("m_statLoadout", mainPanel.transform, "卡组", "默认 6 张", 190f);
+
+        var bottomBar = CreateRect("m_bottomBar", root.transform);
+        SetStretchBottom(bottomBar, 30f, 28f, -30f, 150f);
+        CreateLargeButton("m_btnStartMatch", bottomBar, "匹配", -312f, "Assets/AssetRaw/UI/Art/button_primary_green.png");
+        CreateLargeButton("m_btnCreateRoom", bottomBar, "自定义", -156f, "Assets/AssetRaw/UI/Art/button_secondary_blue.png");
+        CreateLargeButton("m_btnRoomList", bottomBar, "房间", 0f, "Assets/AssetRaw/UI/Art/button_secondary_blue.png");
+        CreateLargeButton("m_btnCards", bottomBar, "卡片", 156f, "Assets/AssetRaw/UI/Art/button_secondary_blue.png");
+        CreateLargeButton("m_btnRefresh", bottomBar, "刷新", 312f, "Assets/AssetRaw/UI/Art/button_secondary_blue.png");
+
+        var sideMenu = CreateRect("m_sideMenu", root.transform);
+        SetAnchor(sideMenu, 1f, 0.5f, 1f, 0.5f, -78f, -34f, 108f, 300f);
+        CreateSideButton("m_btnShop", sideMenu, "商店", 90f);
+        CreateSideButton("m_btnBag", sideMenu, "背包", 0f);
+        CreateSideButton("m_btnCardsSide", sideMenu, "卡片", -90f);
+
+        SavePrefab(root, LobbyPath);
     }
 
     public static void BuildCreateRoomUI()
@@ -188,6 +277,14 @@ public static class SheepBattleUIPrefabBuilder
         return root;
     }
 
+    private static RectTransform CreateRect(string name, Transform parent)
+    {
+        var go = new GameObject(name, typeof(RectTransform));
+        go.layer = LayerMask.NameToLayer("UI");
+        go.transform.SetParent(parent, false);
+        return go.GetComponent<RectTransform>();
+    }
+
     private static RectTransform CreatePanel(string name, Transform parent, Color color)
     {
         var image = CreateImage(name, parent, color);
@@ -202,6 +299,70 @@ public static class SheepBattleUIPrefabBuilder
         var image = go.GetComponent<Image>();
         image.color = color;
         return image;
+    }
+
+    private static Text CreateCurrency(string name, Transform parent, string iconPath, string value, float x)
+    {
+        var chip = CreateImage(name, parent, new Color(0.12f, 0.10f, 0.08f, 0.62f));
+        SetAnchor(chip.rectTransform, 1f, 0.5f, 1f, 0.5f, x, 0f, 168f, 48f);
+
+        var icon = CreateImage("m_imgIcon", chip.transform, Color.white);
+        SetAnchor(icon.rectTransform, 0f, 0.5f, 0f, 0.5f, 26f, 0f, 32f, 32f);
+        ApplySprite(icon, iconPath, Image.Type.Simple);
+
+        var text = CreateText("m_txtValue", chip.transform, 19, FontStyle.Bold, TextAnchor.MiddleLeft, Color.white);
+        SetAnchor(text.rectTransform, 0f, 0.5f, 1f, 0.5f, 88f, 0f, -64f, 34f);
+        text.text = value;
+        return text;
+    }
+
+    private static Text CreateStat(string name, Transform parent, string title, string value, float x)
+    {
+        var card = CreateImage(name, parent, new Color(0.99f, 0.92f, 0.68f, 0.74f));
+        SetAnchor(card.rectTransform, 0.5f, 0f, 0.5f, 0f, x, 54f, 150f, 64f);
+
+        var titleText = CreateText("m_txtTitle", card.transform, 16, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(0.37f, 0.31f, 0.22f, 1f));
+        SetAnchor(titleText.rectTransform, 0.5f, 1f, 0.5f, 1f, 0f, -17f, 126f, 24f);
+        titleText.text = title;
+
+        var valueText = CreateText("m_txtValue", card.transform, 20, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(0.12f, 0.10f, 0.08f, 1f));
+        SetAnchor(valueText.rectTransform, 0.5f, 0f, 0.5f, 0f, 0f, 18f, 126f, 30f);
+        valueText.text = value;
+        return valueText;
+    }
+
+    private static Button CreateSmallButton(string name, Transform parent, string label, float x)
+    {
+        var button = CreateButton(name, parent, label, new Color(0.14f, 0.20f, 0.24f, 0.86f));
+        SetAnchor(button.GetComponent<RectTransform>(), 1f, 0.5f, 1f, 0.5f, x, 0f, 108f, 44f);
+        return button;
+    }
+
+    private static Button CreateLargeButton(string name, Transform parent, string label, float x, string spritePath)
+    {
+        var button = CreateButton(name, parent, label, Color.white);
+        SetAnchor(button.GetComponent<RectTransform>(), 0.5f, 0.5f, 0.5f, 0.5f, x, 0f, 132f, 76f);
+        ApplySprite(button.targetGraphic as Image, spritePath, Image.Type.Sliced);
+        return button;
+    }
+
+    private static Button CreateSideButton(string name, Transform parent, string label, float y)
+    {
+        var button = CreateButton(name, parent, label, new Color(0.11f, 0.20f, 0.25f, 0.86f));
+        SetAnchor(button.GetComponent<RectTransform>(), 0.5f, 0.5f, 0.5f, 0.5f, 0f, y, 92f, 64f);
+        return button;
+    }
+
+    private static void ApplySprite(Image image, string assetPath, Image.Type type)
+    {
+        if (image == null)
+        {
+            return;
+        }
+
+        image.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(assetPath);
+        image.type = type;
+        image.color = Color.white;
     }
 
     private static Text CreateText(string name, Transform parent, int size, FontStyle style, TextAnchor anchor, Color color)
@@ -295,6 +456,24 @@ public static class SheepBattleUIPrefabBuilder
         rect.anchoredPosition = new Vector2(x, y);
     }
 
+    private static void SetStretchTop(RectTransform rect, float left, float top, float right, float height)
+    {
+        rect.anchorMin = new Vector2(0f, 1f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.offsetMin = new Vector2(left, top - height);
+        rect.offsetMax = new Vector2(right, top);
+    }
+
+    private static void SetStretchBottom(RectTransform rect, float left, float bottom, float right, float height)
+    {
+        rect.anchorMin = new Vector2(0f, 0f);
+        rect.anchorMax = new Vector2(1f, 0f);
+        rect.pivot = new Vector2(0.5f, 0f);
+        rect.offsetMin = new Vector2(left, bottom);
+        rect.offsetMax = new Vector2(right, bottom + height);
+    }
+
     private static void Stretch(RectTransform rect)
     {
         rect.anchorMin = Vector2.zero;
@@ -315,5 +494,23 @@ public static class SheepBattleUIPrefabBuilder
     {
         PrefabUtility.SaveAsPrefabAsset(root, path);
         Object.DestroyImmediate(root);
+    }
+
+    private static bool IsLobbyPrefabComplete()
+    {
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(LobbyPath);
+        if (prefab == null)
+        {
+            return false;
+        }
+
+        var root = prefab.transform;
+        return root.Find("m_topBar/m_currencyGold/m_txtValue") != null
+               && root.Find("m_mainPanel/m_statLoadout/m_txtValue") != null
+               && root.Find("m_bottomBar/m_btnStartMatch") != null
+               && root.Find("m_bottomBar/m_btnCreateRoom") != null
+               && root.Find("m_bottomBar/m_btnRoomList") != null
+               && root.Find("m_bottomBar/m_btnRefresh") != null
+               && root.Find("m_sideMenu/m_btnShop") != null;
     }
 }
