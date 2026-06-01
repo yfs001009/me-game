@@ -764,4 +764,61 @@ public uint OpCode() { return InnerOpcode.Battle2G_RecycleBuildingResponse; }
         [ProtoMember(4)]
         public BattleSnapshotInfo Snapshot { get; set; }
     }
+    [ProtoContract]
+    public partial class G2Battle_BuyShopGoodsRequest : AMessage, IAddressRequest
+    {
+        public static G2Battle_BuyShopGoodsRequest Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<G2Battle_BuyShopGoodsRequest>();
+        }
+
+        public override void Dispose()
+        {
+            Profile = default;
+            BattleId = default;
+            ShopId = default;
+            GoodsId = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<G2Battle_BuyShopGoodsRequest>(this);
+#endif
+        }
+public uint OpCode() { return InnerOpcode.G2Battle_BuyShopGoodsRequest; } 
+        [ProtoIgnore]
+        public Battle2G_BuyShopGoodsResponse ResponseType { get; set; }
+        [ProtoMember(1)]
+        public PlayerProfileInfo Profile { get; set; }
+        [ProtoMember(2)]
+        public int BattleId { get; set; }
+        [ProtoMember(3)]
+        public int ShopId { get; set; }
+        [ProtoMember(4)]
+        public int GoodsId { get; set; }
+    }
+    [ProtoContract]
+    public partial class Battle2G_BuyShopGoodsResponse : AMessage, IAddressResponse
+    {
+        public static Battle2G_BuyShopGoodsResponse Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<Battle2G_BuyShopGoodsResponse>();
+        }
+
+        public override void Dispose()
+        {
+            Success = default;
+            Message = default;
+            Snapshot = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<Battle2G_BuyShopGoodsResponse>(this);
+#endif
+        }
+public uint OpCode() { return InnerOpcode.Battle2G_BuyShopGoodsResponse; } 
+        [ProtoMember(1)]
+        public uint ErrorCode { get; set; }
+        [ProtoMember(2)]
+        public bool Success { get; set; }
+        [ProtoMember(3)]
+        public string Message { get; set; }
+        [ProtoMember(4)]
+        public BattleSnapshotInfo Snapshot { get; set; }
+    }
 }

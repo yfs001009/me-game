@@ -34,5 +34,7 @@ namespace Fantasy
         public const uint Battle2G_UpgradeBuildingResponse = 1207969565;
         public const uint G2Battle_RecycleBuildingRequest = 1073751838;
         public const uint Battle2G_RecycleBuildingResponse = 1207969566;
+        public const uint G2Battle_BuyShopGoodsRequest = 1073751839;
+        public const uint Battle2G_BuyShopGoodsResponse = 1207969567;
     }
 }

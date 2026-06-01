@@ -20,28 +20,18 @@ public static class SheepBattleUIPrefabBuilder
                 return;
             }
 
-            var hasLobby = IsLobbyPrefabComplete();
             var hasRoomPrefabs = File.Exists(CreateRoomPath) && File.Exists(RoomPlayerSlotPath);
-            if (hasLobby && hasRoomPrefabs)
+            if (hasRoomPrefabs)
             {
                 return;
             }
 
-            if (!hasLobby)
-            {
-                Debug.Log("SheepBattle LobbyUI prefab is missing or outdated. Building LobbyUI prefab.");
-                BuildLobbyUI();
-            }
-
-            if (!hasRoomPrefabs)
-            {
-                Debug.Log("SheepBattle room UI prefabs are missing. Building room prefabs.");
-                BuildCreateRoomUI();
-                BuildRoomUI();
-                BuildRoomPlayerSlot();
-                AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();
-            }
+            Debug.Log("SheepBattle room UI prefabs are missing. Building room prefabs.");
+            BuildCreateRoomUI();
+            BuildRoomUI();
+            BuildRoomPlayerSlot();
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
         };
     }
 
@@ -60,6 +50,12 @@ public static class SheepBattleUIPrefabBuilder
     [MenuItem("SheepBattle/Build Lobby UI Prefab")]
     public static void BuildLobbyUI()
     {
+        if (File.Exists(LobbyPath))
+        {
+            Debug.LogWarning("LobbyUI.prefab already exists. Edit it directly, or delete it before rebuilding from the fallback generator.");
+            return;
+        }
+
         var root = CreateRoot("LobbyUI");
         var bg = CreateImage("m_imgBackground", root.transform, Color.white);
         Stretch(bg.rectTransform);
@@ -89,42 +85,30 @@ public static class SheepBattleUIPrefabBuilder
         CreateCurrency("m_currencyGem", topBar, "Assets/AssetRaw/UI/Art/icon/ic_gem.png", "680", -248f);
         CreateCurrency("m_currencyCrystal", topBar, "Assets/AssetRaw/UI/Art/icon/ic_crystal.png", "96", -58f);
 
+        CreateSmallButton("m_btnRank", topBar, "排行榜", -442f);
+        CreateSmallButton("m_btnFriend", topBar, "关注", -316f);
         CreateSmallButton("m_btnMail", topBar, "邮件", -190f);
         CreateSmallButton("m_btnSettings", topBar, "设置", -64f);
 
         var mainPanel = CreateImage("m_mainPanel", root.transform, new Color(1f, 0.96f, 0.82f, 0.88f));
-        SetCenter(mainPanel.rectTransform, 0f, 18f, 680f, 300f);
+        SetCenter(mainPanel.rectTransform, 0f, 18f, 760f, 300f);
         ApplySprite(mainPanel, "Assets/AssetRaw/UI/Art/lobby_panel.png", Image.Type.Sliced);
 
-        var title = CreateText("m_txtTitle", mainPanel.transform, 34, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(0.12f, 0.10f, 0.08f, 1f));
-        SetAnchor(title.rectTransform, 0.5f, 1f, 0.5f, 1f, 0f, -58f, 400f, 52f);
-        title.text = "羊群战场";
-
-        var summary = CreateText("m_txtLobbySummary", mainPanel.transform, 22, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(0.12f, 0.10f, 0.08f, 1f));
-        SetCenter(summary.rectTransform, 0f, 36f, 560f, 72f);
-        summary.text = "大厅数据加载中";
-
-        var status = CreateText("m_txtStatus", mainPanel.transform, 19, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(0.37f, 0.31f, 0.22f, 1f));
-        SetCenter(status.rectTransform, 0f, -30f, 560f, 44f);
-        status.text = "状态：等待进入大厅";
-
-        CreateStat("m_statRooms", mainPanel.transform, "房间", "- 个", -190f);
-        CreateStat("m_statMatch", mainPanel.transform, "匹配", "空闲", 0f);
-        CreateStat("m_statLoadout", mainPanel.transform, "卡组", "默认 6 张", 190f);
+        CreateLargeButton("m_btnStage", mainPanel.transform, "闯关", -285f, "Assets/AssetRaw/UI/Art/button_secondary_blue.png");
+        CreateLargeButton("m_btnDungeon", mainPanel.transform, "副本", -95f, "Assets/AssetRaw/UI/Art/button_secondary_blue.png");
+        CreateLargeButton("m_btnBattle", mainPanel.transform, "对战", 95f, "Assets/AssetRaw/UI/Art/button_primary_green.png");
+        CreateLargeButton("m_btnCustom", mainPanel.transform, "自定义", 285f, "Assets/AssetRaw/UI/Art/button_secondary_blue.png");
 
         var bottomBar = CreateRect("m_bottomBar", root.transform);
         SetStretchBottom(bottomBar, 30f, 28f, -30f, 150f);
-        CreateLargeButton("m_btnStartMatch", bottomBar, "匹配", -312f, "Assets/AssetRaw/UI/Art/button_primary_green.png");
-        CreateLargeButton("m_btnCreateRoom", bottomBar, "自定义", -156f, "Assets/AssetRaw/UI/Art/button_secondary_blue.png");
-        CreateLargeButton("m_btnRoomList", bottomBar, "房间", 0f, "Assets/AssetRaw/UI/Art/button_secondary_blue.png");
-        CreateLargeButton("m_btnCards", bottomBar, "卡片", 156f, "Assets/AssetRaw/UI/Art/button_secondary_blue.png");
-        CreateLargeButton("m_btnRefresh", bottomBar, "刷新", 312f, "Assets/AssetRaw/UI/Art/button_secondary_blue.png");
+        CreateChatPreviewButton(bottomBar);
+        CreateLargeButton("m_btnBag", bottomBar, "背包", -95f, "Assets/AssetRaw/UI/Art/button_secondary_blue.png");
+        CreateLargeButton("m_btnCard", bottomBar, "卡片", 95f, "Assets/AssetRaw/UI/Art/button_secondary_blue.png");
+        CreateLargeButton("m_btnHero", bottomBar, "角色", 285f, "Assets/AssetRaw/UI/Art/button_secondary_blue.png");
 
         var sideMenu = CreateRect("m_sideMenu", root.transform);
         SetAnchor(sideMenu, 1f, 0.5f, 1f, 0.5f, -78f, -34f, 108f, 300f);
         CreateSideButton("m_btnShop", sideMenu, "商店", 90f);
-        CreateSideButton("m_btnBag", sideMenu, "背包", 0f);
-        CreateSideButton("m_btnCardsSide", sideMenu, "卡片", -90f);
 
         SavePrefab(root, LobbyPath);
     }
@@ -346,6 +330,33 @@ public static class SheepBattleUIPrefabBuilder
         return button;
     }
 
+    private static Button CreateChatPreviewButton(Transform parent)
+    {
+        var button = CreateButton("m_btnChat", parent, string.Empty, new Color(0.08f, 0.12f, 0.15f, 0.78f));
+        SetAnchor(button.GetComponent<RectTransform>(), 0f, 0f, 0f, 0f, 246f, 82f, 428f, 58f);
+
+        var icon = button.transform.Find("m_txtLabel")?.GetComponent<Text>();
+        if (icon == null)
+        {
+            icon = CreateText("m_txtLabel", button.transform, 24, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white);
+        }
+
+        icon.fontSize = 24;
+        icon.fontStyle = FontStyle.Bold;
+        icon.alignment = TextAnchor.MiddleCenter;
+        icon.color = Color.white;
+        icon.text = "聊";
+        SetAnchor(icon.rectTransform, 0f, 0.5f, 0f, 0.5f, 30f, 0f, 44f, 44f);
+
+        var latestChat = CreateText("m_txtLatestChat", button.transform, 20, FontStyle.Normal, TextAnchor.MiddleLeft, new Color(0.94f, 0.96f, 0.92f, 0.95f));
+        latestChat.text = string.Empty;
+        latestChat.horizontalOverflow = HorizontalWrapMode.Wrap;
+        latestChat.verticalOverflow = VerticalWrapMode.Truncate;
+        SetAnchor(latestChat.rectTransform, 0f, 0.5f, 0f, 0.5f, 68f, 0f, 330f, 42f);
+
+        return button;
+    }
+
     private static Button CreateSideButton(string name, Transform parent, string label, float y)
     {
         var button = CreateButton(name, parent, label, new Color(0.11f, 0.20f, 0.25f, 0.86f));
@@ -506,11 +517,14 @@ public static class SheepBattleUIPrefabBuilder
 
         var root = prefab.transform;
         return root.Find("m_topBar/m_currencyGold/m_txtValue") != null
-               && root.Find("m_mainPanel/m_statLoadout/m_txtValue") != null
-               && root.Find("m_bottomBar/m_btnStartMatch") != null
-               && root.Find("m_bottomBar/m_btnCreateRoom") != null
-               && root.Find("m_bottomBar/m_btnRoomList") != null
-               && root.Find("m_bottomBar/m_btnRefresh") != null
+               && root.Find("m_topBar/m_btnRank") != null
+               && root.Find("m_topBar/m_btnFriend") != null
+               && root.Find("m_mainPanel/m_btnBattle") != null
+               && root.Find("m_bottomBar/m_btnChat") != null
+               && root.Find("m_bottomBar/m_btnChat/m_txtLatestChat") != null
+               && root.Find("m_bottomBar/m_btnBag") != null
+               && root.Find("m_bottomBar/m_btnCard") != null
+               && root.Find("m_bottomBar/m_btnHero") != null
                && root.Find("m_sideMenu/m_btnShop") != null;
     }
 }

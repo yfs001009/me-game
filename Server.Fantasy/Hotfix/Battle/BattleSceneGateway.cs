@@ -81,6 +81,17 @@ internal static class BattleSceneGateway
         });
     }
 
+    public static async FTask<Battle2G_BuyShopGoodsResponse> BuyShopGoods(Scene gateScene, PlayerProfileInfo profile, C2G_BuyBattleShopGoodsCommand request)
+    {
+        return (Battle2G_BuyShopGoodsResponse)await gateScene.Call(BattleSceneAddress(), new G2Battle_BuyShopGoodsRequest
+        {
+            Profile = profile,
+            BattleId = request.BattleId,
+            ShopId = request.ShopId,
+            GoodsId = request.GoodsId
+        });
+    }
+
     private static long BattleSceneAddress()
     {
         var battleScenes = SceneConfigData.Instance.GetSceneBySceneType(SceneType.Battle);

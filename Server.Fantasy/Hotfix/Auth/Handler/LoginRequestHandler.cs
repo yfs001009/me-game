@@ -1,4 +1,4 @@
-﻿using Fantasy;
+using Fantasy;
 using Fantasy.Async;
 using Fantasy.Network;
 using Fantasy.Network.Interface;
@@ -19,6 +19,11 @@ public sealed class LoginRequestHandler : MessageRPC<C2G_LoginRequest, G2C_Login
         response.Message = result.Message;
         response.Token = result.Token;
         response.Profile = result.Profile;
+        if (result.Success)
+        {
+            SheepServices.Assets.BindScene(session.Scene);
+            SheepServices.Tasks.AddProgress(result.Profile.PlayerId, "Login.Count", 1);
+        }
         await FTask.CompletedTask;
     }
 }

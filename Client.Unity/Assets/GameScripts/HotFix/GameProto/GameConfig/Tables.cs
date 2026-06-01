@@ -22,14 +22,6 @@ public partial class Tables
     /// </summary>
     public battle.TbMap TbMap {get; }
     /// <summary>
-    /// 局内商店表：Tiled shop 层对象通过 shop_id 引用
-    /// </summary>
-    public battle.TbShop TbShop {get; }
-    /// <summary>
-    /// 局内商店商品表：定义商店售卖物品、价格和解锁条件
-    /// </summary>
-    public battle.TbShopGoods TbShopGoods {get; }
-    /// <summary>
     /// 怪物配置表：Tiled monster 层对象通过 monster_id 引用
     /// </summary>
     public battle.TbMonster TbMonster {get; }
@@ -45,17 +37,60 @@ public partial class Tables
     /// 建筑等级表：升级消耗、生命值、攻击、范围和产出参数
     /// </summary>
     public battle.TbBuildingCard TbBuildingCard {get; }
+    /// <summary>
+    /// 角色配置表：精灵/巨魔角色、技能、资源和解锁状态
+    /// </summary>
+    public role.TbCharacter TbCharacter {get; }
+    /// <summary>
+    /// 局外货币配置表：金币、钻石、活动币等纯数值资产
+    /// </summary>
+    public asset.TbCurrency TbCurrency {get; }
+    /// <summary>
+    /// 局外道具配置表：票券、体验卡、碎片、增益卡、宝箱和材料
+    /// </summary>
+    public asset.TbItem TbItem {get; }
+    /// <summary>
+    /// 统一开放定义表：活动、功能、限时入口、任务和商店共用
+    /// </summary>
+    public open.TbOpenFeature TbOpenFeature {get; }
+    /// <summary>
+    /// 局外商店表：常驻、活动和限时商店
+    /// </summary>
+    public shop.TbShop TbShop {get; }
+    /// <summary>
+    /// 局外商店商品表
+    /// </summary>
+    public shop.TbShopGoods TbShopGoods {get; }
+    /// <summary>
+    /// 局外任务表：每日、周常、成就和活动任务
+    /// </summary>
+    public task.TbTask TbTask {get; }
+    /// <summary>
+    /// 局内商店表：Tiled shop 层对象通过 shop_id 引用
+    /// </summary>
+    public battle.TbBattleShop TbBattleShop {get; }
+    /// <summary>
+    /// 局内商店商品表：定义本局售卖物品、价格和解锁条件
+    /// </summary>
+    public battle.TbBattleShopGoods TbBattleShopGoods {get; }
 
     public Tables(System.Func<string, ByteBuf> loader)
     {
         TbGameRule = new common.TbGameRule(loader("common_tbgamerule"));
         TbMap = new battle.TbMap(loader("battle_tbmap"));
-        TbShop = new battle.TbShop(loader("battle_tbshop"));
-        TbShopGoods = new battle.TbShopGoods(loader("battle_tbshopgoods"));
         TbMonster = new battle.TbMonster(loader("battle_tbmonster"));
         TbBuilding = new battle.TbBuilding(loader("battle_tbbuilding"));
         TbBuildingLevel = new battle.TbBuildingLevel(loader("battle_tbbuildinglevel"));
         TbBuildingCard = new battle.TbBuildingCard(loader("battle_tbbuildingcard"));
+        TbCharacter = new role.TbCharacter(loader("role_tbcharacter"));
+        TbCurrency = new asset.TbCurrency(loader("asset_tbcurrency"));
+        TbItem = new asset.TbItem(loader("asset_tbitem"));
+        TbOpenFeature = new open.TbOpenFeature(loader("open_tbopenfeature"));
+        TbShop = new shop.TbShop(loader("shop_tbshop"));
+        TbShopGoods = new shop.TbShopGoods(loader("shop_tbshopgoods"));
+        TbTask = new task.TbTask(loader("task_tbtask"));
+        TbBattleShop = new battle.TbBattleShop(loader("battle_tbbattleshop"));
+        TbBattleShopGoods = new battle.TbBattleShopGoods(loader("battle_tbbattleshopgoods"));
         ResolveRef();
     }
     
@@ -63,12 +98,19 @@ public partial class Tables
     {
         TbGameRule.ResolveRef(this);
         TbMap.ResolveRef(this);
-        TbShop.ResolveRef(this);
-        TbShopGoods.ResolveRef(this);
         TbMonster.ResolveRef(this);
         TbBuilding.ResolveRef(this);
         TbBuildingLevel.ResolveRef(this);
         TbBuildingCard.ResolveRef(this);
+        TbCharacter.ResolveRef(this);
+        TbCurrency.ResolveRef(this);
+        TbItem.ResolveRef(this);
+        TbOpenFeature.ResolveRef(this);
+        TbShop.ResolveRef(this);
+        TbShopGoods.ResolveRef(this);
+        TbTask.ResolveRef(this);
+        TbBattleShop.ResolveRef(this);
+        TbBattleShopGoods.ResolveRef(this);
     }
 }
 

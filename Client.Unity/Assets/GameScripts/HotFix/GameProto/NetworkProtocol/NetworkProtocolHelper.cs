@@ -49,6 +49,46 @@ namespace Fantasy
 			return (G2C_SetNicknameResponse)await session.Call(request);
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_SendChatMessageResponse> C2G_SendChatMessageRequest(this Session session, C2G_SendChatMessageRequest request)
+		{
+			return (G2C_SendChatMessageResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_SendChatMessageResponse> C2G_SendChatMessageRequest(this Session session, string token, ChatMessageTreeInfo messageTree)
+		{
+			using var request = Fantasy.C2G_SendChatMessageRequest.Create(session.Scene);
+			request.Token = token;
+			request.MessageTree = messageTree;
+			return (G2C_SendChatMessageResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_ChatHistoryResponse> C2G_ChatHistoryRequest(this Session session, C2G_ChatHistoryRequest request)
+		{
+			return (G2C_ChatHistoryResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_ChatHistoryResponse> C2G_ChatHistoryRequest(this Session session, string token, int channelType, long channelId, int limit)
+		{
+			using var request = Fantasy.C2G_ChatHistoryRequest.Create(session.Scene);
+			request.Token = token;
+			request.ChannelType = channelType;
+			request.ChannelId = channelId;
+			request.Limit = limit;
+			return (G2C_ChatHistoryResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void G2C_ChatMessageNotify(this Session session, G2C_ChatMessageNotify message)
+		{
+			session.Send(message);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void G2C_ChatMessageNotify(this Session session, ChatMessageTreeInfo messageTree)
+		{
+			using var message = Fantasy.G2C_ChatMessageNotify.Create(session.Scene);
+			message.MessageTree = messageTree;
+			session.Send(message);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static async FTask<G2C_LobbyHomeResponse> C2G_LobbyHomeRequest(this Session session, C2G_LobbyHomeRequest request)
 		{
 			return (G2C_LobbyHomeResponse)await session.Call(request);
@@ -59,6 +99,195 @@ namespace Fantasy
 			using var request = Fantasy.C2G_LobbyHomeRequest.Create(session.Scene);
 			request.Token = token;
 			return (G2C_LobbyHomeResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_CharacterListResponse> C2G_CharacterListRequest(this Session session, C2G_CharacterListRequest request)
+		{
+			return (G2C_CharacterListResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_CharacterListResponse> C2G_CharacterListRequest(this Session session, string token)
+		{
+			using var request = Fantasy.C2G_CharacterListRequest.Create(session.Scene);
+			request.Token = token;
+			return (G2C_CharacterListResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_SelectCharacterResponse> C2G_SelectCharacterRequest(this Session session, C2G_SelectCharacterRequest request)
+		{
+			return (G2C_SelectCharacterResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_SelectCharacterResponse> C2G_SelectCharacterRequest(this Session session, string token, int characterId)
+		{
+			using var request = Fantasy.C2G_SelectCharacterRequest.Create(session.Scene);
+			request.Token = token;
+			request.CharacterId = characterId;
+			return (G2C_SelectCharacterResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_AssetSnapshotResponse> C2G_AssetSnapshotRequest(this Session session, C2G_AssetSnapshotRequest request)
+		{
+			return (G2C_AssetSnapshotResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_AssetSnapshotResponse> C2G_AssetSnapshotRequest(this Session session, string token)
+		{
+			using var request = Fantasy.C2G_AssetSnapshotRequest.Create(session.Scene);
+			request.Token = token;
+			return (G2C_AssetSnapshotResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_UseItemResponse> C2G_UseItemRequest(this Session session, C2G_UseItemRequest request)
+		{
+			return (G2C_UseItemResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_UseItemResponse> C2G_UseItemRequest(this Session session, string token, int itemId, int count)
+		{
+			using var request = Fantasy.C2G_UseItemRequest.Create(session.Scene);
+			request.Token = token;
+			request.ItemId = itemId;
+			request.Count = count;
+			return (G2C_UseItemResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_OutgameShopListResponse> C2G_OutgameShopListRequest(this Session session, C2G_OutgameShopListRequest request)
+		{
+			return (G2C_OutgameShopListResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_OutgameShopListResponse> C2G_OutgameShopListRequest(this Session session, string token, string shopType, string activityId, string featureId)
+		{
+			using var request = Fantasy.C2G_OutgameShopListRequest.Create(session.Scene);
+			request.Token = token;
+			request.ShopType = shopType;
+			request.ActivityId = activityId;
+			request.FeatureId = featureId;
+			return (G2C_OutgameShopListResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_BuyOutgameShopGoodsResponse> C2G_BuyOutgameShopGoodsRequest(this Session session, C2G_BuyOutgameShopGoodsRequest request)
+		{
+			return (G2C_BuyOutgameShopGoodsResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_BuyOutgameShopGoodsResponse> C2G_BuyOutgameShopGoodsRequest(this Session session, string token, int goodsId, int count)
+		{
+			using var request = Fantasy.C2G_BuyOutgameShopGoodsRequest.Create(session.Scene);
+			request.Token = token;
+			request.GoodsId = goodsId;
+			request.Count = count;
+			return (G2C_BuyOutgameShopGoodsResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_MailListResponse> C2G_MailListRequest(this Session session, C2G_MailListRequest request)
+		{
+			return (G2C_MailListResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_MailListResponse> C2G_MailListRequest(this Session session, string token)
+		{
+			using var request = Fantasy.C2G_MailListRequest.Create(session.Scene);
+			request.Token = token;
+			return (G2C_MailListResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_ReadMailResponse> C2G_ReadMailRequest(this Session session, C2G_ReadMailRequest request)
+		{
+			return (G2C_ReadMailResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_ReadMailResponse> C2G_ReadMailRequest(this Session session, string token, long mailId)
+		{
+			using var request = Fantasy.C2G_ReadMailRequest.Create(session.Scene);
+			request.Token = token;
+			request.MailId = mailId;
+			return (G2C_ReadMailResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_ClaimMailAttachmentResponse> C2G_ClaimMailAttachmentRequest(this Session session, C2G_ClaimMailAttachmentRequest request)
+		{
+			return (G2C_ClaimMailAttachmentResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_ClaimMailAttachmentResponse> C2G_ClaimMailAttachmentRequest(this Session session, string token, long mailId)
+		{
+			using var request = Fantasy.C2G_ClaimMailAttachmentRequest.Create(session.Scene);
+			request.Token = token;
+			request.MailId = mailId;
+			return (G2C_ClaimMailAttachmentResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_LotteryDrawResponse> C2G_LotteryDrawRequest(this Session session, C2G_LotteryDrawRequest request)
+		{
+			return (G2C_LotteryDrawResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_LotteryDrawResponse> C2G_LotteryDrawRequest(this Session session, string token, string pool, int count)
+		{
+			using var request = Fantasy.C2G_LotteryDrawRequest.Create(session.Scene);
+			request.Token = token;
+			request.Pool = pool;
+			request.Count = count;
+			return (G2C_LotteryDrawResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_OutgameTaskListResponse> C2G_OutgameTaskListRequest(this Session session, C2G_OutgameTaskListRequest request)
+		{
+			return (G2C_OutgameTaskListResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_OutgameTaskListResponse> C2G_OutgameTaskListRequest(this Session session, string token, string taskType, string activityId, string featureId)
+		{
+			using var request = Fantasy.C2G_OutgameTaskListRequest.Create(session.Scene);
+			request.Token = token;
+			request.TaskType = taskType;
+			request.ActivityId = activityId;
+			request.FeatureId = featureId;
+			return (G2C_OutgameTaskListResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_ClaimOutgameTaskRewardResponse> C2G_ClaimOutgameTaskRewardRequest(this Session session, C2G_ClaimOutgameTaskRewardRequest request)
+		{
+			return (G2C_ClaimOutgameTaskRewardResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_ClaimOutgameTaskRewardResponse> C2G_ClaimOutgameTaskRewardRequest(this Session session, string token, int taskId)
+		{
+			using var request = Fantasy.C2G_ClaimOutgameTaskRewardRequest.Create(session.Scene);
+			request.Token = token;
+			request.TaskId = taskId;
+			return (G2C_ClaimOutgameTaskRewardResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_SocialListResponse> C2G_SocialListRequest(this Session session, C2G_SocialListRequest request)
+		{
+			return (G2C_SocialListResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_SocialListResponse> C2G_SocialListRequest(this Session session, string token, string viewMode, string keyword)
+		{
+			using var request = Fantasy.C2G_SocialListRequest.Create(session.Scene);
+			request.Token = token;
+			request.ViewMode = viewMode;
+			request.Keyword = keyword;
+			return (G2C_SocialListResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_FollowPlayerResponse> C2G_FollowPlayerRequest(this Session session, C2G_FollowPlayerRequest request)
+		{
+			return (G2C_FollowPlayerResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_FollowPlayerResponse> C2G_FollowPlayerRequest(this Session session, string token, long targetPlayerId, bool follow, string viewMode)
+		{
+			using var request = Fantasy.C2G_FollowPlayerRequest.Create(session.Scene);
+			request.Token = token;
+			request.TargetPlayerId = targetPlayerId;
+			request.Follow = follow;
+			request.ViewMode = viewMode;
+			return (G2C_FollowPlayerResponse)await session.Call(request);
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static async FTask<G2C_StartMatchResponse> C2G_StartMatchRequest(this Session session, C2G_StartMatchRequest request)
@@ -244,6 +473,21 @@ namespace Fantasy
 			request.BattleId = battleId;
 			request.BuildingInstanceId = buildingInstanceId;
 			return (G2C_RecycleBuildingCommandResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_BuyBattleShopGoodsCommandResponse> C2G_BuyBattleShopGoodsCommand(this Session session, C2G_BuyBattleShopGoodsCommand request)
+		{
+			return (G2C_BuyBattleShopGoodsCommandResponse)await session.Call(request);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static async FTask<G2C_BuyBattleShopGoodsCommandResponse> C2G_BuyBattleShopGoodsCommand(this Session session, string token, int battleId, int shopId, int goodsId)
+		{
+			using var request = Fantasy.C2G_BuyBattleShopGoodsCommand.Create(session.Scene);
+			request.Token = token;
+			request.BattleId = battleId;
+			request.ShopId = shopId;
+			request.GoodsId = goodsId;
+			return (G2C_BuyBattleShopGoodsCommandResponse)await session.Call(request);
 		}
 
    }

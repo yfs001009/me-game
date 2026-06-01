@@ -39,7 +39,21 @@ public sealed class BattlePlayerEntity : Entity
     public float MoveSpeed { get; set; } = 4f;
     public int Hp { get; set; } = 100;
     public int MaxHp { get; set; } = 100;
+    public int Attack { get; set; } = 20;
+    public float AttackRange { get; set; } = 1.4f;
+    public int AttackIntervalMs { get; set; } = 900;
+    public long LastAttackTick { get; set; }
     public List<int> SelectedBuildingCardIds { get; } = new();
+    public List<BattleEquipmentSlotEntity> EquipmentSlots { get; } = new();
+}
+
+public sealed class BattleEquipmentSlotEntity
+{
+    public int SlotIndex { get; init; }
+    public int ItemId { get; set; }
+    public int GoodsId { get; set; }
+    public string ItemName { get; set; } = string.Empty;
+    public string EffectDesc { get; set; } = string.Empty;
 }
 
 public sealed class BattleBuildingEntity : Entity
@@ -62,7 +76,9 @@ public sealed class BattleAttackEventRecord
 {
     public long EventId { get; init; }
     public long SourceBuildingInstanceId { get; init; }
+    public long SourcePlayerId { get; init; }
     public long TargetPlayerId { get; init; }
+    public long TargetBuildingInstanceId { get; init; }
     public float FromX { get; init; }
     public float FromY { get; init; }
     public float ToX { get; init; }

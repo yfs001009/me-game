@@ -224,6 +224,223 @@ public uint OpCode() { return OuterOpcode.G2C_SetNicknameResponse; }
         public PlayerProfileInfo Profile { get; set; }
     }
     /// <summary>
+    /// 聊天消息树节点。
+    /// </summary>
+    [ProtoContract]
+    public partial class ChatInfoNode : AMessage
+    {
+        public static ChatInfoNode Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<ChatInfoNode>();
+        }
+
+        public override void Dispose()
+        {
+            NodeType = default;
+            NodeEvent = default;
+            Content = default;
+            Color = default;
+            Data = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<ChatInfoNode>(this);
+#endif
+        }
+        [ProtoMember(1)]
+        public int NodeType { get; set; }
+        [ProtoMember(2)]
+        public int NodeEvent { get; set; }
+        [ProtoMember(3)]
+        public string Content { get; set; }
+        [ProtoMember(4)]
+        public string Color { get; set; }
+        [ProtoMember(5)]
+        public string Data { get; set; }
+    }
+    /// <summary>
+    /// 通用聊天消息树。
+    /// </summary>
+    [ProtoContract]
+    public partial class ChatMessageTreeInfo : AMessage
+    {
+        public static ChatMessageTreeInfo Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<ChatMessageTreeInfo>();
+        }
+
+        public override void Dispose()
+        {
+            ChannelType = default;
+            ChannelId = default;
+            UnitId = default;
+            UserName = default;
+            IsHaveLinkItem = default;
+            SystemBroadcastId = default;
+            Targets.Clear();
+            Nodes.Clear();
+            MessageId = default;
+            SendTimeUnixSeconds = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<ChatMessageTreeInfo>(this);
+#endif
+        }
+        [ProtoMember(1)]
+        public int ChannelType { get; set; }
+        [ProtoMember(2)]
+        public long ChannelId { get; set; }
+        [ProtoMember(3)]
+        public long UnitId { get; set; }
+        [ProtoMember(4)]
+        public string UserName { get; set; }
+        [ProtoMember(5)]
+        public bool IsHaveLinkItem { get; set; }
+        [ProtoMember(6)]
+        public int SystemBroadcastId { get; set; }
+        [ProtoMember(7)]
+        public List<long> Targets { get; set; } = new List<long>();
+        [ProtoMember(8)]
+        public List<ChatInfoNode> Nodes { get; set; } = new List<ChatInfoNode>();
+        [ProtoMember(9)]
+        public long MessageId { get; set; }
+        [ProtoMember(10)]
+        public long SendTimeUnixSeconds { get; set; }
+    }
+    /// <summary>
+    /// 发送聊天消息。
+    /// </summary>
+    [ProtoContract]
+    public partial class C2G_SendChatMessageRequest : AMessage, IRequest
+    {
+        public static C2G_SendChatMessageRequest Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<C2G_SendChatMessageRequest>();
+        }
+
+        public override void Dispose()
+        {
+            Token = default;
+            MessageTree = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<C2G_SendChatMessageRequest>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.C2G_SendChatMessageRequest; } 
+        [ProtoIgnore]
+        public G2C_SendChatMessageResponse ResponseType { get; set; }
+        [ProtoMember(1)]
+        public string Token { get; set; }
+        [ProtoMember(2)]
+        public ChatMessageTreeInfo MessageTree { get; set; }
+    }
+    [ProtoContract]
+    public partial class G2C_SendChatMessageResponse : AMessage, IResponse
+    {
+        public static G2C_SendChatMessageResponse Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<G2C_SendChatMessageResponse>();
+        }
+
+        public override void Dispose()
+        {
+            Success = default;
+            Message = default;
+            MessageTree = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<G2C_SendChatMessageResponse>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.G2C_SendChatMessageResponse; } 
+        [ProtoMember(1)]
+        public uint ErrorCode { get; set; }
+        [ProtoMember(2)]
+        public bool Success { get; set; }
+        [ProtoMember(3)]
+        public string Message { get; set; }
+        [ProtoMember(4)]
+        public ChatMessageTreeInfo MessageTree { get; set; }
+    }
+    /// <summary>
+    /// 拉取最近聊天消息。用于登录后补世界频道最近记录。
+    /// </summary>
+    [ProtoContract]
+    public partial class C2G_ChatHistoryRequest : AMessage, IRequest
+    {
+        public static C2G_ChatHistoryRequest Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<C2G_ChatHistoryRequest>();
+        }
+
+        public override void Dispose()
+        {
+            Token = default;
+            ChannelType = default;
+            ChannelId = default;
+            Limit = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<C2G_ChatHistoryRequest>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.C2G_ChatHistoryRequest; } 
+        [ProtoIgnore]
+        public G2C_ChatHistoryResponse ResponseType { get; set; }
+        [ProtoMember(1)]
+        public string Token { get; set; }
+        [ProtoMember(2)]
+        public int ChannelType { get; set; }
+        [ProtoMember(3)]
+        public long ChannelId { get; set; }
+        [ProtoMember(4)]
+        public int Limit { get; set; }
+    }
+    [ProtoContract]
+    public partial class G2C_ChatHistoryResponse : AMessage, IResponse
+    {
+        public static G2C_ChatHistoryResponse Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<G2C_ChatHistoryResponse>();
+        }
+
+        public override void Dispose()
+        {
+            Success = default;
+            Message = default;
+            Messages.Clear();
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<G2C_ChatHistoryResponse>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.G2C_ChatHistoryResponse; } 
+        [ProtoMember(1)]
+        public uint ErrorCode { get; set; }
+        [ProtoMember(2)]
+        public bool Success { get; set; }
+        [ProtoMember(3)]
+        public string Message { get; set; }
+        [ProtoMember(4)]
+        public List<ChatMessageTreeInfo> Messages { get; set; } = new List<ChatMessageTreeInfo>();
+    }
+    /// <summary>
+    /// 服务端主动推送聊天消息。
+    /// </summary>
+    [ProtoContract]
+    public partial class G2C_ChatMessageNotify : AMessage, IMessage
+    {
+        public static G2C_ChatMessageNotify Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<G2C_ChatMessageNotify>();
+        }
+
+        public override void Dispose()
+        {
+            MessageTree = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<G2C_ChatMessageNotify>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.G2C_ChatMessageNotify; } 
+        [ProtoMember(1)]
+        public ChatMessageTreeInfo MessageTree { get; set; }
+    }
+    /// <summary>
     /// 拉取大厅首页。
     /// </summary>
     [ProtoContract]
@@ -273,6 +490,1326 @@ public uint OpCode() { return OuterOpcode.G2C_LobbyHomeResponse; }
         public List<RoomSummaryInfo> Rooms { get; set; } = new List<RoomSummaryInfo>();
         [ProtoMember(4)]
         public MatchStatusInfo MatchStatus { get; set; }
+    }
+    /// <summary>
+    /// 角色基础信息。配置驱动，服务端补充拥有与选中状态。
+    /// </summary>
+    [ProtoContract]
+    public partial class CharacterInfo : AMessage
+    {
+        public static CharacterInfo Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<CharacterInfo>();
+        }
+
+        public override void Dispose()
+        {
+            CharacterId = default;
+            Category = default;
+            Race = default;
+            Name = default;
+            AbilityId = default;
+            AbilityName = default;
+            AbilityDesc = default;
+            IconAsset = default;
+            PrefabAsset = default;
+            IsUnlocked = default;
+            IsSelected = default;
+            Description = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<CharacterInfo>(this);
+#endif
+        }
+        [ProtoMember(1)]
+        public int CharacterId { get; set; }
+        [ProtoMember(2)]
+        public string Category { get; set; }
+        [ProtoMember(3)]
+        public string Race { get; set; }
+        [ProtoMember(4)]
+        public string Name { get; set; }
+        [ProtoMember(5)]
+        public int AbilityId { get; set; }
+        [ProtoMember(6)]
+        public string AbilityName { get; set; }
+        [ProtoMember(7)]
+        public string AbilityDesc { get; set; }
+        [ProtoMember(8)]
+        public string IconAsset { get; set; }
+        [ProtoMember(9)]
+        public string PrefabAsset { get; set; }
+        [ProtoMember(10)]
+        public bool IsUnlocked { get; set; }
+        [ProtoMember(11)]
+        public bool IsSelected { get; set; }
+        [ProtoMember(12)]
+        public string Description { get; set; }
+    }
+    /// <summary>
+    /// 拉取玩家角色列表。
+    /// </summary>
+    [ProtoContract]
+    public partial class C2G_CharacterListRequest : AMessage, IRequest
+    {
+        public static C2G_CharacterListRequest Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<C2G_CharacterListRequest>();
+        }
+
+        public override void Dispose()
+        {
+            Token = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<C2G_CharacterListRequest>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.C2G_CharacterListRequest; } 
+        [ProtoIgnore]
+        public G2C_CharacterListResponse ResponseType { get; set; }
+        [ProtoMember(1)]
+        public string Token { get; set; }
+    }
+    [ProtoContract]
+    public partial class G2C_CharacterListResponse : AMessage, IResponse
+    {
+        public static G2C_CharacterListResponse Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<G2C_CharacterListResponse>();
+        }
+
+        public override void Dispose()
+        {
+            Success = default;
+            Message = default;
+            Characters.Clear();
+            SelectedHeroId = default;
+            SelectedGhostId = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<G2C_CharacterListResponse>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.G2C_CharacterListResponse; } 
+        [ProtoMember(1)]
+        public uint ErrorCode { get; set; }
+        [ProtoMember(2)]
+        public bool Success { get; set; }
+        [ProtoMember(3)]
+        public string Message { get; set; }
+        [ProtoMember(4)]
+        public List<CharacterInfo> Characters { get; set; } = new List<CharacterInfo>();
+        [ProtoMember(5)]
+        public int SelectedHeroId { get; set; }
+        [ProtoMember(6)]
+        public int SelectedGhostId { get; set; }
+    }
+    /// <summary>
+    /// 选择出战角色。
+    /// </summary>
+    [ProtoContract]
+    public partial class C2G_SelectCharacterRequest : AMessage, IRequest
+    {
+        public static C2G_SelectCharacterRequest Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<C2G_SelectCharacterRequest>();
+        }
+
+        public override void Dispose()
+        {
+            Token = default;
+            CharacterId = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<C2G_SelectCharacterRequest>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.C2G_SelectCharacterRequest; } 
+        [ProtoIgnore]
+        public G2C_SelectCharacterResponse ResponseType { get; set; }
+        [ProtoMember(1)]
+        public string Token { get; set; }
+        [ProtoMember(2)]
+        public int CharacterId { get; set; }
+    }
+    [ProtoContract]
+    public partial class G2C_SelectCharacterResponse : AMessage, IResponse
+    {
+        public static G2C_SelectCharacterResponse Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<G2C_SelectCharacterResponse>();
+        }
+
+        public override void Dispose()
+        {
+            Success = default;
+            Message = default;
+            Characters.Clear();
+            SelectedHeroId = default;
+            SelectedGhostId = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<G2C_SelectCharacterResponse>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.G2C_SelectCharacterResponse; } 
+        [ProtoMember(1)]
+        public uint ErrorCode { get; set; }
+        [ProtoMember(2)]
+        public bool Success { get; set; }
+        [ProtoMember(3)]
+        public string Message { get; set; }
+        [ProtoMember(4)]
+        public List<CharacterInfo> Characters { get; set; } = new List<CharacterInfo>();
+        [ProtoMember(5)]
+        public int SelectedHeroId { get; set; }
+        [ProtoMember(6)]
+        public int SelectedGhostId { get; set; }
+    }
+    /// <summary>
+    /// 货币余额。
+    /// </summary>
+    [ProtoContract]
+    public partial class CurrencyBalanceInfo : AMessage
+    {
+        public static CurrencyBalanceInfo Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<CurrencyBalanceInfo>();
+        }
+
+        public override void Dispose()
+        {
+            CurrencyId = default;
+            Code = default;
+            Name = default;
+            Amount = default;
+            IconAsset = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<CurrencyBalanceInfo>(this);
+#endif
+        }
+        [ProtoMember(1)]
+        public int CurrencyId { get; set; }
+        [ProtoMember(2)]
+        public string Code { get; set; }
+        [ProtoMember(3)]
+        public string Name { get; set; }
+        [ProtoMember(4)]
+        public long Amount { get; set; }
+        [ProtoMember(5)]
+        public string IconAsset { get; set; }
+    }
+    /// <summary>
+    /// 背包道具堆叠。
+    /// </summary>
+    [ProtoContract]
+    public partial class BagItemInfo : AMessage
+    {
+        public static BagItemInfo Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<BagItemInfo>();
+        }
+
+        public override void Dispose()
+        {
+            ItemId = default;
+            ItemType = default;
+            Name = default;
+            Count = default;
+            MaxStack = default;
+            UseType = default;
+            IconAsset = default;
+            Description = default;
+            Quality = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<BagItemInfo>(this);
+#endif
+        }
+        [ProtoMember(1)]
+        public int ItemId { get; set; }
+        [ProtoMember(2)]
+        public string ItemType { get; set; }
+        [ProtoMember(3)]
+        public string Name { get; set; }
+        [ProtoMember(4)]
+        public int Count { get; set; }
+        [ProtoMember(5)]
+        public int MaxStack { get; set; }
+        [ProtoMember(6)]
+        public string UseType { get; set; }
+        [ProtoMember(7)]
+        public string IconAsset { get; set; }
+        [ProtoMember(8)]
+        public string Description { get; set; }
+        [ProtoMember(9)]
+        public int Quality { get; set; }
+    }
+    /// <summary>
+    /// 临时增益状态。
+    /// </summary>
+    [ProtoContract]
+    public partial class BuffStateInfo : AMessage
+    {
+        public static BuffStateInfo Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<BuffStateInfo>();
+        }
+
+        public override void Dispose()
+        {
+            BuffKey = default;
+            ExpiresAtUnixSeconds = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<BuffStateInfo>(this);
+#endif
+        }
+        [ProtoMember(1)]
+        public string BuffKey { get; set; }
+        [ProtoMember(2)]
+        public long ExpiresAtUnixSeconds { get; set; }
+    }
+    /// <summary>
+    /// 局外进度值，如保底、任务或赛季经验。
+    /// </summary>
+    [ProtoContract]
+    public partial class ProgressValueInfo : AMessage
+    {
+        public static ProgressValueInfo Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<ProgressValueInfo>();
+        }
+
+        public override void Dispose()
+        {
+            Key = default;
+            Value = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<ProgressValueInfo>(this);
+#endif
+        }
+        [ProtoMember(1)]
+        public string Key { get; set; }
+        [ProtoMember(2)]
+        public long Value { get; set; }
+    }
+    /// <summary>
+    /// 局外资产快照。
+    /// </summary>
+    [ProtoContract]
+    public partial class AssetSnapshotInfo : AMessage
+    {
+        public static AssetSnapshotInfo Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<AssetSnapshotInfo>();
+        }
+
+        public override void Dispose()
+        {
+            Currencies.Clear();
+            BagItems.Clear();
+            UnlockedCharacterIds.Clear();
+            UnlockedBuildingCardIds.Clear();
+            Buffs.Clear();
+            ProgressValues.Clear();
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<AssetSnapshotInfo>(this);
+#endif
+        }
+        [ProtoMember(1)]
+        public List<CurrencyBalanceInfo> Currencies { get; set; } = new List<CurrencyBalanceInfo>();
+        [ProtoMember(2)]
+        public List<BagItemInfo> BagItems { get; set; } = new List<BagItemInfo>();
+        [ProtoMember(3)]
+        public List<int> UnlockedCharacterIds { get; set; } = new List<int>();
+        [ProtoMember(4)]
+        public List<int> UnlockedBuildingCardIds { get; set; } = new List<int>();
+        [ProtoMember(5)]
+        public List<BuffStateInfo> Buffs { get; set; } = new List<BuffStateInfo>();
+        [ProtoMember(6)]
+        public List<ProgressValueInfo> ProgressValues { get; set; } = new List<ProgressValueInfo>();
+    }
+    /// <summary>
+    /// 拉取局外资产。
+    /// </summary>
+    [ProtoContract]
+    public partial class C2G_AssetSnapshotRequest : AMessage, IRequest
+    {
+        public static C2G_AssetSnapshotRequest Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<C2G_AssetSnapshotRequest>();
+        }
+
+        public override void Dispose()
+        {
+            Token = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<C2G_AssetSnapshotRequest>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.C2G_AssetSnapshotRequest; } 
+        [ProtoIgnore]
+        public G2C_AssetSnapshotResponse ResponseType { get; set; }
+        [ProtoMember(1)]
+        public string Token { get; set; }
+    }
+    [ProtoContract]
+    public partial class G2C_AssetSnapshotResponse : AMessage, IResponse
+    {
+        public static G2C_AssetSnapshotResponse Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<G2C_AssetSnapshotResponse>();
+        }
+
+        public override void Dispose()
+        {
+            Success = default;
+            Message = default;
+            Snapshot = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<G2C_AssetSnapshotResponse>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.G2C_AssetSnapshotResponse; } 
+        [ProtoMember(1)]
+        public uint ErrorCode { get; set; }
+        [ProtoMember(2)]
+        public bool Success { get; set; }
+        [ProtoMember(3)]
+        public string Message { get; set; }
+        [ProtoMember(4)]
+        public AssetSnapshotInfo Snapshot { get; set; }
+    }
+    /// <summary>
+    /// 使用背包道具。
+    /// </summary>
+    [ProtoContract]
+    public partial class C2G_UseItemRequest : AMessage, IRequest
+    {
+        public static C2G_UseItemRequest Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<C2G_UseItemRequest>();
+        }
+
+        public override void Dispose()
+        {
+            Token = default;
+            ItemId = default;
+            Count = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<C2G_UseItemRequest>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.C2G_UseItemRequest; } 
+        [ProtoIgnore]
+        public G2C_UseItemResponse ResponseType { get; set; }
+        [ProtoMember(1)]
+        public string Token { get; set; }
+        [ProtoMember(2)]
+        public int ItemId { get; set; }
+        [ProtoMember(3)]
+        public int Count { get; set; }
+    }
+    [ProtoContract]
+    public partial class G2C_UseItemResponse : AMessage, IResponse
+    {
+        public static G2C_UseItemResponse Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<G2C_UseItemResponse>();
+        }
+
+        public override void Dispose()
+        {
+            Success = default;
+            Message = default;
+            Snapshot = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<G2C_UseItemResponse>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.G2C_UseItemResponse; } 
+        [ProtoMember(1)]
+        public uint ErrorCode { get; set; }
+        [ProtoMember(2)]
+        public bool Success { get; set; }
+        [ProtoMember(3)]
+        public string Message { get; set; }
+        [ProtoMember(4)]
+        public AssetSnapshotInfo Snapshot { get; set; }
+    }
+    /// <summary>
+    /// 局外商店商品。FeatureId 引用统一开放定义表，控制活动/功能同步开放。
+    /// </summary>
+    [ProtoContract]
+    public partial class OutgameShopGoodsInfo : AMessage
+    {
+        public static OutgameShopGoodsInfo Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<OutgameShopGoodsInfo>();
+        }
+
+        public override void Dispose()
+        {
+            GoodsId = default;
+            ShopId = default;
+            GoodsGroupId = default;
+            Name = default;
+            PriceCurrencyId = default;
+            PriceItemId = default;
+            PriceAmount = default;
+            BuyLimit = default;
+            BoughtCount = default;
+            IsAvailable = default;
+            UnlockRule = default;
+            Description = default;
+            Reward = default;
+            FeatureId = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<OutgameShopGoodsInfo>(this);
+#endif
+        }
+        [ProtoMember(1)]
+        public int GoodsId { get; set; }
+        [ProtoMember(2)]
+        public int ShopId { get; set; }
+        [ProtoMember(3)]
+        public int GoodsGroupId { get; set; }
+        [ProtoMember(4)]
+        public string Name { get; set; }
+        [ProtoMember(5)]
+        public int PriceCurrencyId { get; set; }
+        [ProtoMember(6)]
+        public int PriceItemId { get; set; }
+        [ProtoMember(7)]
+        public long PriceAmount { get; set; }
+        [ProtoMember(8)]
+        public int BuyLimit { get; set; }
+        [ProtoMember(9)]
+        public int BoughtCount { get; set; }
+        [ProtoMember(10)]
+        public bool IsAvailable { get; set; }
+        [ProtoMember(11)]
+        public string UnlockRule { get; set; }
+        [ProtoMember(12)]
+        public string Description { get; set; }
+        [ProtoMember(13)]
+        public RewardInfo Reward { get; set; }
+        [ProtoMember(14)]
+        public string FeatureId { get; set; }
+    }
+    /// <summary>
+    /// 局外商店。FeatureId 引用统一开放定义表，ActivityId 仅用于活动归类/筛选。
+    /// </summary>
+    [ProtoContract]
+    public partial class OutgameShopInfo : AMessage
+    {
+        public static OutgameShopInfo Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<OutgameShopInfo>();
+        }
+
+        public override void Dispose()
+        {
+            ShopId = default;
+            ShopName = default;
+            ShopType = default;
+            ActivityId = default;
+            RefreshGroup = default;
+            OpensAtUnixSeconds = default;
+            ClosesAtUnixSeconds = default;
+            Goods.Clear();
+            FeatureId = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<OutgameShopInfo>(this);
+#endif
+        }
+        [ProtoMember(1)]
+        public int ShopId { get; set; }
+        [ProtoMember(2)]
+        public string ShopName { get; set; }
+        [ProtoMember(3)]
+        public string ShopType { get; set; }
+        [ProtoMember(4)]
+        public string ActivityId { get; set; }
+        [ProtoMember(5)]
+        public string RefreshGroup { get; set; }
+        [ProtoMember(6)]
+        public long OpensAtUnixSeconds { get; set; }
+        [ProtoMember(7)]
+        public long ClosesAtUnixSeconds { get; set; }
+        [ProtoMember(8)]
+        public List<OutgameShopGoodsInfo> Goods { get; set; } = new List<OutgameShopGoodsInfo>();
+        [ProtoMember(9)]
+        public string FeatureId { get; set; }
+    }
+    /// <summary>
+    /// 拉取局外商店列表。ShopType/ActivityId 为空表示全部。
+    /// </summary>
+    [ProtoContract]
+    public partial class C2G_OutgameShopListRequest : AMessage, IRequest
+    {
+        public static C2G_OutgameShopListRequest Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<C2G_OutgameShopListRequest>();
+        }
+
+        public override void Dispose()
+        {
+            Token = default;
+            ShopType = default;
+            ActivityId = default;
+            FeatureId = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<C2G_OutgameShopListRequest>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.C2G_OutgameShopListRequest; } 
+        [ProtoIgnore]
+        public G2C_OutgameShopListResponse ResponseType { get; set; }
+        [ProtoMember(1)]
+        public string Token { get; set; }
+        [ProtoMember(2)]
+        public string ShopType { get; set; }
+        [ProtoMember(3)]
+        public string ActivityId { get; set; }
+        [ProtoMember(4)]
+        public string FeatureId { get; set; }
+    }
+    [ProtoContract]
+    public partial class G2C_OutgameShopListResponse : AMessage, IResponse
+    {
+        public static G2C_OutgameShopListResponse Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<G2C_OutgameShopListResponse>();
+        }
+
+        public override void Dispose()
+        {
+            Success = default;
+            Message = default;
+            Shops.Clear();
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<G2C_OutgameShopListResponse>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.G2C_OutgameShopListResponse; } 
+        [ProtoMember(1)]
+        public uint ErrorCode { get; set; }
+        [ProtoMember(2)]
+        public bool Success { get; set; }
+        [ProtoMember(3)]
+        public string Message { get; set; }
+        [ProtoMember(4)]
+        public List<OutgameShopInfo> Shops { get; set; } = new List<OutgameShopInfo>();
+    }
+    /// <summary>
+    /// 购买局外商品。
+    /// </summary>
+    [ProtoContract]
+    public partial class C2G_BuyOutgameShopGoodsRequest : AMessage, IRequest
+    {
+        public static C2G_BuyOutgameShopGoodsRequest Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<C2G_BuyOutgameShopGoodsRequest>();
+        }
+
+        public override void Dispose()
+        {
+            Token = default;
+            GoodsId = default;
+            Count = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<C2G_BuyOutgameShopGoodsRequest>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.C2G_BuyOutgameShopGoodsRequest; } 
+        [ProtoIgnore]
+        public G2C_BuyOutgameShopGoodsResponse ResponseType { get; set; }
+        [ProtoMember(1)]
+        public string Token { get; set; }
+        [ProtoMember(2)]
+        public int GoodsId { get; set; }
+        [ProtoMember(3)]
+        public int Count { get; set; }
+    }
+    [ProtoContract]
+    public partial class G2C_BuyOutgameShopGoodsResponse : AMessage, IResponse
+    {
+        public static G2C_BuyOutgameShopGoodsResponse Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<G2C_BuyOutgameShopGoodsResponse>();
+        }
+
+        public override void Dispose()
+        {
+            Success = default;
+            Message = default;
+            Goods = default;
+            Snapshot = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<G2C_BuyOutgameShopGoodsResponse>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.G2C_BuyOutgameShopGoodsResponse; } 
+        [ProtoMember(1)]
+        public uint ErrorCode { get; set; }
+        [ProtoMember(2)]
+        public bool Success { get; set; }
+        [ProtoMember(3)]
+        public string Message { get; set; }
+        [ProtoMember(4)]
+        public OutgameShopGoodsInfo Goods { get; set; }
+        [ProtoMember(5)]
+        public AssetSnapshotInfo Snapshot { get; set; }
+    }
+    /// <summary>
+    /// 奖励内容，用于邮件附件和奖励预览。
+    /// </summary>
+    [ProtoContract]
+    public partial class RewardInfo : AMessage
+    {
+        public static RewardInfo Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<RewardInfo>();
+        }
+
+        public override void Dispose()
+        {
+            Currencies.Clear();
+            Items.Clear();
+            CharacterIds.Clear();
+            BuildingCardIds.Clear();
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<RewardInfo>(this);
+#endif
+        }
+        [ProtoMember(1)]
+        public List<CurrencyBalanceInfo> Currencies { get; set; } = new List<CurrencyBalanceInfo>();
+        [ProtoMember(2)]
+        public List<BagItemInfo> Items { get; set; } = new List<BagItemInfo>();
+        [ProtoMember(3)]
+        public List<int> CharacterIds { get; set; } = new List<int>();
+        [ProtoMember(4)]
+        public List<int> BuildingCardIds { get; set; } = new List<int>();
+    }
+    /// <summary>
+    /// 邮件摘要。
+    /// </summary>
+    [ProtoContract]
+    public partial class MailInfo : AMessage
+    {
+        public static MailInfo Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<MailInfo>();
+        }
+
+        public override void Dispose()
+        {
+            MailId = default;
+            Title = default;
+            Content = default;
+            Sender = default;
+            SentAtUnixSeconds = default;
+            IsRead = default;
+            IsAttachmentClaimed = default;
+            Attachment = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<MailInfo>(this);
+#endif
+        }
+        [ProtoMember(1)]
+        public long MailId { get; set; }
+        [ProtoMember(2)]
+        public string Title { get; set; }
+        [ProtoMember(3)]
+        public string Content { get; set; }
+        [ProtoMember(4)]
+        public string Sender { get; set; }
+        [ProtoMember(5)]
+        public long SentAtUnixSeconds { get; set; }
+        [ProtoMember(6)]
+        public bool IsRead { get; set; }
+        [ProtoMember(7)]
+        public bool IsAttachmentClaimed { get; set; }
+        [ProtoMember(8)]
+        public RewardInfo Attachment { get; set; }
+    }
+    /// <summary>
+    /// 拉取邮件列表。
+    /// </summary>
+    [ProtoContract]
+    public partial class C2G_MailListRequest : AMessage, IRequest
+    {
+        public static C2G_MailListRequest Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<C2G_MailListRequest>();
+        }
+
+        public override void Dispose()
+        {
+            Token = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<C2G_MailListRequest>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.C2G_MailListRequest; } 
+        [ProtoIgnore]
+        public G2C_MailListResponse ResponseType { get; set; }
+        [ProtoMember(1)]
+        public string Token { get; set; }
+    }
+    [ProtoContract]
+    public partial class G2C_MailListResponse : AMessage, IResponse
+    {
+        public static G2C_MailListResponse Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<G2C_MailListResponse>();
+        }
+
+        public override void Dispose()
+        {
+            Success = default;
+            Message = default;
+            Mails.Clear();
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<G2C_MailListResponse>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.G2C_MailListResponse; } 
+        [ProtoMember(1)]
+        public uint ErrorCode { get; set; }
+        [ProtoMember(2)]
+        public bool Success { get; set; }
+        [ProtoMember(3)]
+        public string Message { get; set; }
+        [ProtoMember(4)]
+        public List<MailInfo> Mails { get; set; } = new List<MailInfo>();
+    }
+    /// <summary>
+    /// 标记邮件已读。
+    /// </summary>
+    [ProtoContract]
+    public partial class C2G_ReadMailRequest : AMessage, IRequest
+    {
+        public static C2G_ReadMailRequest Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<C2G_ReadMailRequest>();
+        }
+
+        public override void Dispose()
+        {
+            Token = default;
+            MailId = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<C2G_ReadMailRequest>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.C2G_ReadMailRequest; } 
+        [ProtoIgnore]
+        public G2C_ReadMailResponse ResponseType { get; set; }
+        [ProtoMember(1)]
+        public string Token { get; set; }
+        [ProtoMember(2)]
+        public long MailId { get; set; }
+    }
+    [ProtoContract]
+    public partial class G2C_ReadMailResponse : AMessage, IResponse
+    {
+        public static G2C_ReadMailResponse Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<G2C_ReadMailResponse>();
+        }
+
+        public override void Dispose()
+        {
+            Success = default;
+            Message = default;
+            Mails.Clear();
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<G2C_ReadMailResponse>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.G2C_ReadMailResponse; } 
+        [ProtoMember(1)]
+        public uint ErrorCode { get; set; }
+        [ProtoMember(2)]
+        public bool Success { get; set; }
+        [ProtoMember(3)]
+        public string Message { get; set; }
+        [ProtoMember(4)]
+        public List<MailInfo> Mails { get; set; } = new List<MailInfo>();
+    }
+    /// <summary>
+    /// 领取邮件附件。
+    /// </summary>
+    [ProtoContract]
+    public partial class C2G_ClaimMailAttachmentRequest : AMessage, IRequest
+    {
+        public static C2G_ClaimMailAttachmentRequest Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<C2G_ClaimMailAttachmentRequest>();
+        }
+
+        public override void Dispose()
+        {
+            Token = default;
+            MailId = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<C2G_ClaimMailAttachmentRequest>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.C2G_ClaimMailAttachmentRequest; } 
+        [ProtoIgnore]
+        public G2C_ClaimMailAttachmentResponse ResponseType { get; set; }
+        [ProtoMember(1)]
+        public string Token { get; set; }
+        [ProtoMember(2)]
+        public long MailId { get; set; }
+    }
+    [ProtoContract]
+    public partial class G2C_ClaimMailAttachmentResponse : AMessage, IResponse
+    {
+        public static G2C_ClaimMailAttachmentResponse Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<G2C_ClaimMailAttachmentResponse>();
+        }
+
+        public override void Dispose()
+        {
+            Success = default;
+            Message = default;
+            Mails.Clear();
+            Snapshot = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<G2C_ClaimMailAttachmentResponse>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.G2C_ClaimMailAttachmentResponse; } 
+        [ProtoMember(1)]
+        public uint ErrorCode { get; set; }
+        [ProtoMember(2)]
+        public bool Success { get; set; }
+        [ProtoMember(3)]
+        public string Message { get; set; }
+        [ProtoMember(4)]
+        public List<MailInfo> Mails { get; set; } = new List<MailInfo>();
+        [ProtoMember(5)]
+        public AssetSnapshotInfo Snapshot { get; set; }
+    }
+    /// <summary>
+    /// 抽奖结果。
+    /// </summary>
+    [ProtoContract]
+    public partial class LotteryDrawResultInfo : AMessage
+    {
+        public static LotteryDrawResultInfo Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<LotteryDrawResultInfo>();
+        }
+
+        public override void Dispose()
+        {
+            Pool = default;
+            Reward = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<LotteryDrawResultInfo>(this);
+#endif
+        }
+        [ProtoMember(1)]
+        public string Pool { get; set; }
+        [ProtoMember(2)]
+        public RewardInfo Reward { get; set; }
+    }
+    /// <summary>
+    /// 抽奖。
+    /// </summary>
+    [ProtoContract]
+    public partial class C2G_LotteryDrawRequest : AMessage, IRequest
+    {
+        public static C2G_LotteryDrawRequest Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<C2G_LotteryDrawRequest>();
+        }
+
+        public override void Dispose()
+        {
+            Token = default;
+            Pool = default;
+            Count = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<C2G_LotteryDrawRequest>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.C2G_LotteryDrawRequest; } 
+        [ProtoIgnore]
+        public G2C_LotteryDrawResponse ResponseType { get; set; }
+        [ProtoMember(1)]
+        public string Token { get; set; }
+        [ProtoMember(2)]
+        public string Pool { get; set; }
+        [ProtoMember(3)]
+        public int Count { get; set; }
+    }
+    [ProtoContract]
+    public partial class G2C_LotteryDrawResponse : AMessage, IResponse
+    {
+        public static G2C_LotteryDrawResponse Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<G2C_LotteryDrawResponse>();
+        }
+
+        public override void Dispose()
+        {
+            Success = default;
+            Message = default;
+            Results.Clear();
+            Snapshot = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<G2C_LotteryDrawResponse>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.G2C_LotteryDrawResponse; } 
+        [ProtoMember(1)]
+        public uint ErrorCode { get; set; }
+        [ProtoMember(2)]
+        public bool Success { get; set; }
+        [ProtoMember(3)]
+        public string Message { get; set; }
+        [ProtoMember(4)]
+        public List<LotteryDrawResultInfo> Results { get; set; } = new List<LotteryDrawResultInfo>();
+        [ProtoMember(5)]
+        public AssetSnapshotInfo Snapshot { get; set; }
+    }
+    /// <summary>
+    /// 局外任务状态。FeatureId 引用统一开放定义表，TaskType 仅用于任务归类/筛选。
+    /// </summary>
+    [ProtoContract]
+    public partial class OutgameTaskInfo : AMessage
+    {
+        public static OutgameTaskInfo Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<OutgameTaskInfo>();
+        }
+
+        public override void Dispose()
+        {
+            TaskId = default;
+            TaskType = default;
+            ActivityId = default;
+            Title = default;
+            Description = default;
+            ProgressKey = default;
+            Current = default;
+            Target = default;
+            State = default;
+            RefreshGroup = default;
+            EndsAtUnixSeconds = default;
+            Reward = default;
+            FeatureId = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<OutgameTaskInfo>(this);
+#endif
+        }
+        [ProtoMember(1)]
+        public int TaskId { get; set; }
+        [ProtoMember(2)]
+        public string TaskType { get; set; }
+        [ProtoMember(3)]
+        public string ActivityId { get; set; }
+        [ProtoMember(4)]
+        public string Title { get; set; }
+        [ProtoMember(5)]
+        public string Description { get; set; }
+        [ProtoMember(6)]
+        public string ProgressKey { get; set; }
+        [ProtoMember(7)]
+        public long Current { get; set; }
+        [ProtoMember(8)]
+        public long Target { get; set; }
+        [ProtoMember(9)]
+        public string State { get; set; }
+        [ProtoMember(10)]
+        public string RefreshGroup { get; set; }
+        [ProtoMember(11)]
+        public long EndsAtUnixSeconds { get; set; }
+        [ProtoMember(12)]
+        public RewardInfo Reward { get; set; }
+        [ProtoMember(13)]
+        public string FeatureId { get; set; }
+    }
+    /// <summary>
+    /// 拉取局外任务列表。TaskType/ActivityId 为空表示全部。
+    /// </summary>
+    [ProtoContract]
+    public partial class C2G_OutgameTaskListRequest : AMessage, IRequest
+    {
+        public static C2G_OutgameTaskListRequest Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<C2G_OutgameTaskListRequest>();
+        }
+
+        public override void Dispose()
+        {
+            Token = default;
+            TaskType = default;
+            ActivityId = default;
+            FeatureId = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<C2G_OutgameTaskListRequest>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.C2G_OutgameTaskListRequest; } 
+        [ProtoIgnore]
+        public G2C_OutgameTaskListResponse ResponseType { get; set; }
+        [ProtoMember(1)]
+        public string Token { get; set; }
+        [ProtoMember(2)]
+        public string TaskType { get; set; }
+        [ProtoMember(3)]
+        public string ActivityId { get; set; }
+        [ProtoMember(4)]
+        public string FeatureId { get; set; }
+    }
+    [ProtoContract]
+    public partial class G2C_OutgameTaskListResponse : AMessage, IResponse
+    {
+        public static G2C_OutgameTaskListResponse Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<G2C_OutgameTaskListResponse>();
+        }
+
+        public override void Dispose()
+        {
+            Success = default;
+            Message = default;
+            Tasks.Clear();
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<G2C_OutgameTaskListResponse>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.G2C_OutgameTaskListResponse; } 
+        [ProtoMember(1)]
+        public uint ErrorCode { get; set; }
+        [ProtoMember(2)]
+        public bool Success { get; set; }
+        [ProtoMember(3)]
+        public string Message { get; set; }
+        [ProtoMember(4)]
+        public List<OutgameTaskInfo> Tasks { get; set; } = new List<OutgameTaskInfo>();
+    }
+    /// <summary>
+    /// 领取局外任务奖励。
+    /// </summary>
+    [ProtoContract]
+    public partial class C2G_ClaimOutgameTaskRewardRequest : AMessage, IRequest
+    {
+        public static C2G_ClaimOutgameTaskRewardRequest Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<C2G_ClaimOutgameTaskRewardRequest>();
+        }
+
+        public override void Dispose()
+        {
+            Token = default;
+            TaskId = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<C2G_ClaimOutgameTaskRewardRequest>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.C2G_ClaimOutgameTaskRewardRequest; } 
+        [ProtoIgnore]
+        public G2C_ClaimOutgameTaskRewardResponse ResponseType { get; set; }
+        [ProtoMember(1)]
+        public string Token { get; set; }
+        [ProtoMember(2)]
+        public int TaskId { get; set; }
+    }
+    [ProtoContract]
+    public partial class G2C_ClaimOutgameTaskRewardResponse : AMessage, IResponse
+    {
+        public static G2C_ClaimOutgameTaskRewardResponse Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<G2C_ClaimOutgameTaskRewardResponse>();
+        }
+
+        public override void Dispose()
+        {
+            Success = default;
+            Message = default;
+            Tasks.Clear();
+            Snapshot = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<G2C_ClaimOutgameTaskRewardResponse>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.G2C_ClaimOutgameTaskRewardResponse; } 
+        [ProtoMember(1)]
+        public uint ErrorCode { get; set; }
+        [ProtoMember(2)]
+        public bool Success { get; set; }
+        [ProtoMember(3)]
+        public string Message { get; set; }
+        [ProtoMember(4)]
+        public List<OutgameTaskInfo> Tasks { get; set; } = new List<OutgameTaskInfo>();
+        [ProtoMember(5)]
+        public AssetSnapshotInfo Snapshot { get; set; }
+    }
+    /// <summary>
+    /// 社交列表中的玩家。
+    /// </summary>
+    [ProtoContract]
+    public partial class SocialPlayerInfo : AMessage
+    {
+        public static SocialPlayerInfo Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<SocialPlayerInfo>();
+        }
+
+        public override void Dispose()
+        {
+            Profile = default;
+            IsFollowing = default;
+            IsFollower = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<SocialPlayerInfo>(this);
+#endif
+        }
+        [ProtoMember(1)]
+        public PlayerProfileInfo Profile { get; set; }
+        [ProtoMember(2)]
+        public bool IsFollowing { get; set; }
+        [ProtoMember(3)]
+        public bool IsFollower { get; set; }
+    }
+    /// <summary>
+    /// 拉取关注/粉丝列表。ViewMode 使用 Following/Fans/Search。
+    /// </summary>
+    [ProtoContract]
+    public partial class C2G_SocialListRequest : AMessage, IRequest
+    {
+        public static C2G_SocialListRequest Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<C2G_SocialListRequest>();
+        }
+
+        public override void Dispose()
+        {
+            Token = default;
+            ViewMode = default;
+            Keyword = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<C2G_SocialListRequest>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.C2G_SocialListRequest; } 
+        [ProtoIgnore]
+        public G2C_SocialListResponse ResponseType { get; set; }
+        [ProtoMember(1)]
+        public string Token { get; set; }
+        [ProtoMember(2)]
+        public string ViewMode { get; set; }
+        [ProtoMember(3)]
+        public string Keyword { get; set; }
+    }
+    [ProtoContract]
+    public partial class G2C_SocialListResponse : AMessage, IResponse
+    {
+        public static G2C_SocialListResponse Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<G2C_SocialListResponse>();
+        }
+
+        public override void Dispose()
+        {
+            Success = default;
+            Message = default;
+            Players.Clear();
+            FollowingCount = default;
+            FollowerCount = default;
+            ViewMode = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<G2C_SocialListResponse>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.G2C_SocialListResponse; } 
+        [ProtoMember(1)]
+        public uint ErrorCode { get; set; }
+        [ProtoMember(2)]
+        public bool Success { get; set; }
+        [ProtoMember(3)]
+        public string Message { get; set; }
+        [ProtoMember(4)]
+        public List<SocialPlayerInfo> Players { get; set; } = new List<SocialPlayerInfo>();
+        [ProtoMember(5)]
+        public int FollowingCount { get; set; }
+        [ProtoMember(6)]
+        public int FollowerCount { get; set; }
+        [ProtoMember(7)]
+        public string ViewMode { get; set; }
+    }
+    /// <summary>
+    /// 关注或取消关注玩家。
+    /// </summary>
+    [ProtoContract]
+    public partial class C2G_FollowPlayerRequest : AMessage, IRequest
+    {
+        public static C2G_FollowPlayerRequest Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<C2G_FollowPlayerRequest>();
+        }
+
+        public override void Dispose()
+        {
+            Token = default;
+            TargetPlayerId = default;
+            Follow = default;
+            ViewMode = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<C2G_FollowPlayerRequest>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.C2G_FollowPlayerRequest; } 
+        [ProtoIgnore]
+        public G2C_FollowPlayerResponse ResponseType { get; set; }
+        [ProtoMember(1)]
+        public string Token { get; set; }
+        [ProtoMember(2)]
+        public long TargetPlayerId { get; set; }
+        [ProtoMember(3)]
+        public bool Follow { get; set; }
+        [ProtoMember(4)]
+        public string ViewMode { get; set; }
+    }
+    [ProtoContract]
+    public partial class G2C_FollowPlayerResponse : AMessage, IResponse
+    {
+        public static G2C_FollowPlayerResponse Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<G2C_FollowPlayerResponse>();
+        }
+
+        public override void Dispose()
+        {
+            Success = default;
+            Message = default;
+            Players.Clear();
+            FollowingCount = default;
+            FollowerCount = default;
+            ViewMode = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<G2C_FollowPlayerResponse>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.G2C_FollowPlayerResponse; } 
+        [ProtoMember(1)]
+        public uint ErrorCode { get; set; }
+        [ProtoMember(2)]
+        public bool Success { get; set; }
+        [ProtoMember(3)]
+        public string Message { get; set; }
+        [ProtoMember(4)]
+        public List<SocialPlayerInfo> Players { get; set; } = new List<SocialPlayerInfo>();
+        [ProtoMember(5)]
+        public int FollowingCount { get; set; }
+        [ProtoMember(6)]
+        public int FollowerCount { get; set; }
+        [ProtoMember(7)]
+        public string ViewMode { get; set; }
     }
     /// <summary>
     /// 匹配状态。
@@ -767,6 +2304,10 @@ public uint OpCode() { return OuterOpcode.G2C_StartRoomResponse; }
             Hp = default;
             MaxHp = default;
             SelectedBuildingCardIds.Clear();
+            EquipmentSlots.Clear();
+            Attack = default;
+            AttackRange = default;
+            AttackIntervalMs = default;
 #if FANTASY_NET || FANTASY_UNITY
             GetScene().MessagePoolComponent.Return<BattlePlayerStateInfo>(this);
 #endif
@@ -795,6 +2336,47 @@ public uint OpCode() { return OuterOpcode.G2C_StartRoomResponse; }
         public int MaxHp { get; set; }
         [ProtoMember(12)]
         public List<int> SelectedBuildingCardIds { get; set; } = new List<int>();
+        [ProtoMember(13)]
+        public List<BattleEquipmentSlotInfo> EquipmentSlots { get; set; } = new List<BattleEquipmentSlotInfo>();
+        [ProtoMember(14)]
+        public int Attack { get; set; }
+        [ProtoMember(15)]
+        public float AttackRange { get; set; }
+        [ProtoMember(16)]
+        public int AttackIntervalMs { get; set; }
+    }
+    /// <summary>
+    /// 巨魔局内装备格。SlotIndex 固定 0-5，空格 ItemId 为 0。
+    /// </summary>
+    [ProtoContract]
+    public partial class BattleEquipmentSlotInfo : AMessage
+    {
+        public static BattleEquipmentSlotInfo Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<BattleEquipmentSlotInfo>();
+        }
+
+        public override void Dispose()
+        {
+            SlotIndex = default;
+            ItemId = default;
+            GoodsId = default;
+            ItemName = default;
+            EffectDesc = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<BattleEquipmentSlotInfo>(this);
+#endif
+        }
+        [ProtoMember(1)]
+        public int SlotIndex { get; set; }
+        [ProtoMember(2)]
+        public int ItemId { get; set; }
+        [ProtoMember(3)]
+        public int GoodsId { get; set; }
+        [ProtoMember(4)]
+        public string ItemName { get; set; }
+        [ProtoMember(5)]
+        public string EffectDesc { get; set; }
     }
     /// <summary>
     /// 战斗建筑同步状态。
@@ -862,6 +2444,8 @@ public uint OpCode() { return OuterOpcode.G2C_StartRoomResponse; }
             ToX = default;
             ToY = default;
             Damage = default;
+            SourcePlayerId = default;
+            TargetBuildingInstanceId = default;
 #if FANTASY_NET || FANTASY_UNITY
             GetScene().MessagePoolComponent.Return<BattleAttackEventInfo>(this);
 #endif
@@ -882,6 +2466,10 @@ public uint OpCode() { return OuterOpcode.G2C_StartRoomResponse; }
         public float ToY { get; set; }
         [ProtoMember(8)]
         public int Damage { get; set; }
+        [ProtoMember(9)]
+        public long SourcePlayerId { get; set; }
+        [ProtoMember(10)]
+        public long TargetBuildingInstanceId { get; set; }
     }
     /// <summary>
     /// 战斗快照。服务端权威，客户端只显示。
@@ -1258,6 +2846,66 @@ public uint OpCode() { return OuterOpcode.C2G_RecycleBuildingCommand; }
 #endif
         }
 public uint OpCode() { return OuterOpcode.G2C_RecycleBuildingCommandResponse; } 
+        [ProtoMember(1)]
+        public uint ErrorCode { get; set; }
+        [ProtoMember(2)]
+        public bool Success { get; set; }
+        [ProtoMember(3)]
+        public string Message { get; set; }
+        [ProtoMember(4)]
+        public BattleSnapshotInfo Snapshot { get; set; }
+    }
+    /// <summary>
+    /// 巨魔购买地图局内商店装备。服务端用 TMX shop 层的 shoprange 校验距离。
+    /// </summary>
+    [ProtoContract]
+    public partial class C2G_BuyBattleShopGoodsCommand : AMessage, IRequest
+    {
+        public static C2G_BuyBattleShopGoodsCommand Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<C2G_BuyBattleShopGoodsCommand>();
+        }
+
+        public override void Dispose()
+        {
+            Token = default;
+            BattleId = default;
+            ShopId = default;
+            GoodsId = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<C2G_BuyBattleShopGoodsCommand>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.C2G_BuyBattleShopGoodsCommand; } 
+        [ProtoIgnore]
+        public G2C_BuyBattleShopGoodsCommandResponse ResponseType { get; set; }
+        [ProtoMember(1)]
+        public string Token { get; set; }
+        [ProtoMember(2)]
+        public int BattleId { get; set; }
+        [ProtoMember(3)]
+        public int ShopId { get; set; }
+        [ProtoMember(4)]
+        public int GoodsId { get; set; }
+    }
+    [ProtoContract]
+    public partial class G2C_BuyBattleShopGoodsCommandResponse : AMessage, IResponse
+    {
+        public static G2C_BuyBattleShopGoodsCommandResponse Create(Scene scene)
+        {
+            return scene.MessagePoolComponent.Rent<G2C_BuyBattleShopGoodsCommandResponse>();
+        }
+
+        public override void Dispose()
+        {
+            Success = default;
+            Message = default;
+            Snapshot = default;
+#if FANTASY_NET || FANTASY_UNITY
+            GetScene().MessagePoolComponent.Return<G2C_BuyBattleShopGoodsCommandResponse>(this);
+#endif
+        }
+public uint OpCode() { return OuterOpcode.G2C_BuyBattleShopGoodsCommandResponse; } 
         [ProtoMember(1)]
         public uint ErrorCode { get; set; }
         [ProtoMember(2)]

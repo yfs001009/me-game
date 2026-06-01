@@ -16,9 +16,9 @@ public sealed class JoinRoomRequestHandler : MessageRPC<C2G_JoinRoomRequest, G2C
     {
         if (!SheepServices.Auth.TryRequireProfile(request.Token, out var profile, out var message))
         {
+            response.ErrorCode = 401;
             response.Success = false;
             response.Message = message;
-            await FTask.CompletedTask;
             return;
         }
 

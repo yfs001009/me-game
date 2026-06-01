@@ -53,6 +53,65 @@ message G2C_SetNicknameResponse // IResponse
     PlayerProfileInfo Profile = 3;
 }
 
+/// 聊天消息树节点。
+message ChatInfoNode
+{
+    int32 NodeType = 1;
+    int32 NodeEvent = 2;
+    string Content = 3;
+    string Color = 4;
+    string Data = 5;
+}
+
+/// 通用聊天消息树。
+message ChatMessageTreeInfo
+{
+    int32 ChannelType = 1;
+    int64 ChannelId = 2;
+    int64 UnitId = 3;
+    string UserName = 4;
+    bool IsHaveLinkItem = 5;
+    int32 SystemBroadcastId = 6;
+    repeated int64 Targets = 7;
+    repeated ChatInfoNode Nodes = 8;
+    int64 MessageId = 9;
+    int64 SendTimeUnixSeconds = 10;
+}
+
+/// 发送聊天消息。
+message C2G_SendChatMessageRequest // IRequest,G2C_SendChatMessageResponse
+{
+    string Token = 1;
+    ChatMessageTreeInfo MessageTree = 2;
+}
+message G2C_SendChatMessageResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    ChatMessageTreeInfo MessageTree = 3;
+}
+
+/// 拉取最近聊天消息。用于登录后补世界频道最近记录。
+message C2G_ChatHistoryRequest // IRequest,G2C_ChatHistoryResponse
+{
+    string Token = 1;
+    int32 ChannelType = 2;
+    int64 ChannelId = 3;
+    int32 Limit = 4;
+}
+message G2C_ChatHistoryResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    repeated ChatMessageTreeInfo Messages = 3;
+}
+
+/// 服务端主动推送聊天消息。
+message G2C_ChatMessageNotify // IMessage
+{
+    ChatMessageTreeInfo MessageTree = 1;
+}
+
 /// 拉取大厅首页。
 message C2G_LobbyHomeRequest // IRequest,G2C_LobbyHomeResponse
 {
@@ -63,6 +122,363 @@ message G2C_LobbyHomeResponse // IResponse
     PlayerProfileInfo Profile = 1;
     repeated RoomSummaryInfo Rooms = 2;
     MatchStatusInfo MatchStatus = 3;
+}
+
+/// 角色基础信息。配置驱动，服务端补充拥有与选中状态。
+message CharacterInfo
+{
+    int32 CharacterId = 1;
+    string Category = 2;
+    string Race = 3;
+    string Name = 4;
+    int32 AbilityId = 5;
+    string AbilityName = 6;
+    string AbilityDesc = 7;
+    string IconAsset = 8;
+    string PrefabAsset = 9;
+    bool IsUnlocked = 10;
+    bool IsSelected = 11;
+    string Description = 12;
+}
+
+/// 拉取玩家角色列表。
+message C2G_CharacterListRequest // IRequest,G2C_CharacterListResponse
+{
+    string Token = 1;
+}
+message G2C_CharacterListResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    repeated CharacterInfo Characters = 3;
+    int32 SelectedHeroId = 4;
+    int32 SelectedGhostId = 5;
+}
+
+/// 选择出战角色。
+message C2G_SelectCharacterRequest // IRequest,G2C_SelectCharacterResponse
+{
+    string Token = 1;
+    int32 CharacterId = 2;
+}
+message G2C_SelectCharacterResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    repeated CharacterInfo Characters = 3;
+    int32 SelectedHeroId = 4;
+    int32 SelectedGhostId = 5;
+}
+
+/// 货币余额。
+message CurrencyBalanceInfo
+{
+    int32 CurrencyId = 1;
+    string Code = 2;
+    string Name = 3;
+    int64 Amount = 4;
+    string IconAsset = 5;
+}
+
+/// 背包道具堆叠。
+message BagItemInfo
+{
+    int32 ItemId = 1;
+    string ItemType = 2;
+    string Name = 3;
+    int32 Count = 4;
+    int32 MaxStack = 5;
+    string UseType = 6;
+    string IconAsset = 7;
+    string Description = 8;
+    int32 Quality = 9;
+}
+
+/// 临时增益状态。
+message BuffStateInfo
+{
+    string BuffKey = 1;
+    int64 ExpiresAtUnixSeconds = 2;
+}
+
+/// 局外进度值，如保底、任务或赛季经验。
+message ProgressValueInfo
+{
+    string Key = 1;
+    int64 Value = 2;
+}
+
+/// 局外资产快照。
+message AssetSnapshotInfo
+{
+    repeated CurrencyBalanceInfo Currencies = 1;
+    repeated BagItemInfo BagItems = 2;
+    repeated int32 UnlockedCharacterIds = 3;
+    repeated int32 UnlockedBuildingCardIds = 4;
+    repeated BuffStateInfo Buffs = 5;
+    repeated ProgressValueInfo ProgressValues = 6;
+}
+
+/// 拉取局外资产。
+message C2G_AssetSnapshotRequest // IRequest,G2C_AssetSnapshotResponse
+{
+    string Token = 1;
+}
+message G2C_AssetSnapshotResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    AssetSnapshotInfo Snapshot = 3;
+}
+
+/// 使用背包道具。
+message C2G_UseItemRequest // IRequest,G2C_UseItemResponse
+{
+    string Token = 1;
+    int32 ItemId = 2;
+    int32 Count = 3;
+}
+message G2C_UseItemResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    AssetSnapshotInfo Snapshot = 3;
+}
+
+/// 局外商店商品。FeatureId 引用统一开放定义表，控制活动/功能同步开放。
+message OutgameShopGoodsInfo
+{
+    int32 GoodsId = 1;
+    int32 ShopId = 2;
+    int32 GoodsGroupId = 3;
+    string Name = 4;
+    int32 PriceCurrencyId = 5;
+    int32 PriceItemId = 6;
+    int64 PriceAmount = 7;
+    int32 BuyLimit = 8;
+    int32 BoughtCount = 9;
+    bool IsAvailable = 10;
+    string UnlockRule = 11;
+    string Description = 12;
+    RewardInfo Reward = 13;
+    string FeatureId = 14;
+}
+
+/// 局外商店。FeatureId 引用统一开放定义表，ActivityId 仅用于活动归类/筛选。
+message OutgameShopInfo
+{
+    int32 ShopId = 1;
+    string ShopName = 2;
+    string ShopType = 3;
+    string ActivityId = 4;
+    string RefreshGroup = 5;
+    int64 OpensAtUnixSeconds = 6;
+    int64 ClosesAtUnixSeconds = 7;
+    repeated OutgameShopGoodsInfo Goods = 8;
+    string FeatureId = 9;
+}
+
+/// 拉取局外商店列表。ShopType/ActivityId 为空表示全部。
+message C2G_OutgameShopListRequest // IRequest,G2C_OutgameShopListResponse
+{
+    string Token = 1;
+    string ShopType = 2;
+    string ActivityId = 3;
+    string FeatureId = 4;
+}
+message G2C_OutgameShopListResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    repeated OutgameShopInfo Shops = 3;
+}
+
+/// 购买局外商品。
+message C2G_BuyOutgameShopGoodsRequest // IRequest,G2C_BuyOutgameShopGoodsResponse
+{
+    string Token = 1;
+    int32 GoodsId = 2;
+    int32 Count = 3;
+}
+message G2C_BuyOutgameShopGoodsResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    OutgameShopGoodsInfo Goods = 3;
+    AssetSnapshotInfo Snapshot = 4;
+}
+
+/// 奖励内容，用于邮件附件和奖励预览。
+message RewardInfo
+{
+    repeated CurrencyBalanceInfo Currencies = 1;
+    repeated BagItemInfo Items = 2;
+    repeated int32 CharacterIds = 3;
+    repeated int32 BuildingCardIds = 4;
+}
+
+/// 邮件摘要。
+message MailInfo
+{
+    int64 MailId = 1;
+    string Title = 2;
+    string Content = 3;
+    string Sender = 4;
+    int64 SentAtUnixSeconds = 5;
+    bool IsRead = 6;
+    bool IsAttachmentClaimed = 7;
+    RewardInfo Attachment = 8;
+}
+
+/// 拉取邮件列表。
+message C2G_MailListRequest // IRequest,G2C_MailListResponse
+{
+    string Token = 1;
+}
+message G2C_MailListResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    repeated MailInfo Mails = 3;
+}
+
+/// 标记邮件已读。
+message C2G_ReadMailRequest // IRequest,G2C_ReadMailResponse
+{
+    string Token = 1;
+    int64 MailId = 2;
+}
+message G2C_ReadMailResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    repeated MailInfo Mails = 3;
+}
+
+/// 领取邮件附件。
+message C2G_ClaimMailAttachmentRequest // IRequest,G2C_ClaimMailAttachmentResponse
+{
+    string Token = 1;
+    int64 MailId = 2;
+}
+message G2C_ClaimMailAttachmentResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    repeated MailInfo Mails = 3;
+    AssetSnapshotInfo Snapshot = 4;
+}
+
+/// 抽奖结果。
+message LotteryDrawResultInfo
+{
+    string Pool = 1;
+    RewardInfo Reward = 2;
+}
+
+/// 抽奖。
+message C2G_LotteryDrawRequest // IRequest,G2C_LotteryDrawResponse
+{
+    string Token = 1;
+    string Pool = 2;
+    int32 Count = 3;
+}
+message G2C_LotteryDrawResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    repeated LotteryDrawResultInfo Results = 3;
+    AssetSnapshotInfo Snapshot = 4;
+}
+
+/// 局外任务状态。FeatureId 引用统一开放定义表，TaskType 仅用于任务归类/筛选。
+message OutgameTaskInfo
+{
+    int32 TaskId = 1;
+    string TaskType = 2;
+    string ActivityId = 3;
+    string Title = 4;
+    string Description = 5;
+    string ProgressKey = 6;
+    int64 Current = 7;
+    int64 Target = 8;
+    string State = 9;
+    string RefreshGroup = 10;
+    int64 EndsAtUnixSeconds = 11;
+    RewardInfo Reward = 12;
+    string FeatureId = 13;
+}
+
+/// 拉取局外任务列表。TaskType/ActivityId 为空表示全部。
+message C2G_OutgameTaskListRequest // IRequest,G2C_OutgameTaskListResponse
+{
+    string Token = 1;
+    string TaskType = 2;
+    string ActivityId = 3;
+    string FeatureId = 4;
+}
+message G2C_OutgameTaskListResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    repeated OutgameTaskInfo Tasks = 3;
+}
+
+/// 领取局外任务奖励。
+message C2G_ClaimOutgameTaskRewardRequest // IRequest,G2C_ClaimOutgameTaskRewardResponse
+{
+    string Token = 1;
+    int32 TaskId = 2;
+}
+message G2C_ClaimOutgameTaskRewardResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    repeated OutgameTaskInfo Tasks = 3;
+    AssetSnapshotInfo Snapshot = 4;
+}
+
+/// 社交列表中的玩家。
+message SocialPlayerInfo
+{
+    PlayerProfileInfo Profile = 1;
+    bool IsFollowing = 2;
+    bool IsFollower = 3;
+}
+
+/// 拉取关注/粉丝列表。ViewMode 使用 Following/Fans/Search。
+message C2G_SocialListRequest // IRequest,G2C_SocialListResponse
+{
+    string Token = 1;
+    string ViewMode = 2;
+    string Keyword = 3;
+}
+message G2C_SocialListResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    repeated SocialPlayerInfo Players = 3;
+    int32 FollowingCount = 4;
+    int32 FollowerCount = 5;
+    string ViewMode = 6;
+}
+
+/// 关注或取消关注玩家。
+message C2G_FollowPlayerRequest // IRequest,G2C_FollowPlayerResponse
+{
+    string Token = 1;
+    int64 TargetPlayerId = 2;
+    bool Follow = 3;
+    string ViewMode = 4;
+}
+message G2C_FollowPlayerResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    repeated SocialPlayerInfo Players = 3;
+    int32 FollowingCount = 4;
+    int32 FollowerCount = 5;
+    string ViewMode = 6;
 }
 
 /// 匹配状态。
@@ -199,6 +615,20 @@ message BattlePlayerStateInfo
     int32 Hp = 10;
     int32 MaxHp = 11;
     repeated int32 SelectedBuildingCardIds = 12;
+    repeated BattleEquipmentSlotInfo EquipmentSlots = 13;
+    int32 Attack = 14;
+    float AttackRange = 15;
+    int32 AttackIntervalMs = 16;
+}
+
+/// 巨魔局内装备格。SlotIndex 固定 0-5，空格 ItemId 为 0。
+message BattleEquipmentSlotInfo
+{
+    int32 SlotIndex = 1;
+    int32 ItemId = 2;
+    int32 GoodsId = 3;
+    string ItemName = 4;
+    string EffectDesc = 5;
 }
 
 /// 战斗建筑同步状态。
@@ -226,6 +656,8 @@ message BattleAttackEventInfo
     float ToX = 6;
     float ToY = 7;
     int32 Damage = 8;
+    int64 SourcePlayerId = 9;
+    int64 TargetBuildingInstanceId = 10;
 }
 
 /// 战斗快照。服务端权威，客户端只显示。
@@ -319,6 +751,21 @@ message C2G_RecycleBuildingCommand // IRequest,G2C_RecycleBuildingCommandRespons
     int64 BuildingInstanceId = 3;
 }
 message G2C_RecycleBuildingCommandResponse // IResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    BattleSnapshotInfo Snapshot = 3;
+}
+
+/// 巨魔购买地图局内商店装备。服务端用 TMX shop 层的 shoprange 校验距离。
+message C2G_BuyBattleShopGoodsCommand // IRequest,G2C_BuyBattleShopGoodsCommandResponse
+{
+    string Token = 1;
+    int32 BattleId = 2;
+    int32 ShopId = 3;
+    int32 GoodsId = 4;
+}
+message G2C_BuyBattleShopGoodsCommandResponse // IResponse
 {
     bool Success = 1;
     string Message = 2;

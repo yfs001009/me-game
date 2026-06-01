@@ -181,6 +181,25 @@ namespace GameLogic.SheepBattle.Battle
 
             return defaultValue;
         }
+
+        public float GetFloatProperty(string propertyName, float defaultValue = 0f)
+        {
+            if (properties == null)
+            {
+                return defaultValue;
+            }
+
+            for (var i = 0; i < properties.Length; i++)
+            {
+                var property = properties[i];
+                if (property != null && property.name == propertyName && float.TryParse(property.ValueText, out var value))
+                {
+                    return value;
+                }
+            }
+
+            return defaultValue;
+        }
     }
 
     [Serializable]

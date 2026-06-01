@@ -144,3 +144,26 @@ public sealed class BattleRecycleAddressHandler : AddressRPC<Scene, G2Battle_Rec
         await FTask.CompletedTask;
     }
 }
+
+/// <summary>
+/// Battle Scene 内处理巨魔局内商店购买，商店距离和装备栏容量由服务端权威校验。
+/// </summary>
+public sealed class BattleBuyShopGoodsAddressHandler : AddressRPC<Scene, G2Battle_BuyShopGoodsRequest, Battle2G_BuyShopGoodsResponse>
+{
+    protected override async FTask Run(Scene scene, G2Battle_BuyShopGoodsRequest request, Battle2G_BuyShopGoodsResponse response, Action reply)
+    {
+        var result = SheepServices.Battles.BuyBattleShopGoods(request.Profile, new C2G_BuyBattleShopGoodsCommand
+        {
+            BattleId = request.BattleId,
+            ShopId = request.ShopId,
+            GoodsId = request.GoodsId
+        });
+        response.Success = result.Success;
+        response.Message = result.Message;
+        if (result.Snapshot != null)
+        {
+            response.Snapshot = result.Snapshot;
+        }
+        await FTask.CompletedTask;
+    }
+}

@@ -3,6 +3,7 @@ using System.Text;
 using Fantasy;
 using Hotfix.Shared;
 using Fantasy.Entitas;
+using Hotfix.Mail.Model;
 
 namespace Hotfix.Auth.Service;
 
@@ -120,6 +121,46 @@ public sealed class AuthService
             record.Nickname = nickname;
             Log.Info($"玩家设置昵称成功：玩家ID={record.PlayerId}，昵称={record.Nickname}");
             return (true, "昵称设置成功。", ToProfile(record));
+        }
+    }
+
+    public IEnumerable<MailRecipientProfile> GetMailRecipients()
+    {
+        lock (gate)
+        {
+            return accountsById.Values
+                .Select(record => new MailRecipientProfile
+                {
+                    PlayerId = record.PlayerId,
+                    Level = record.Level
+                })
+                .ToList();
+        }
+    }
+
+    public PlayerProfileInfo? GetProfile(long playerId)
+    {
+        lock (gate)
+        {
+            return accountsById.TryGetValue(playerId, out var record) ? ToProfile(record) : null;
+        }
+    }
+
+    public IReadOnlyList<PlayerProfileInfo> SearchProfiles(long requesterPlayerId, string keyword, int limit = 50)
+    {
+        lock (gate)
+        {
+            keyword = Normalize(keyword);
+            return accountsById.Values
+                .Where(record => record.PlayerId != requesterPlayerId)
+                .Where(record => string.IsNullOrWhiteSpace(keyword)
+                                 || record.PlayerId.ToString().Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                                 || record.Account.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                                 || record.Nickname.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(record => record.PlayerId)
+                .Take(Math.Clamp(limit, 1, 100))
+                .Select(ToProfile)
+                .ToList();
         }
     }
 

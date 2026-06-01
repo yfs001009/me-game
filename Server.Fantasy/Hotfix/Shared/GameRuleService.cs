@@ -24,7 +24,7 @@ public sealed class GameRuleService
     public TimeSpan WaitingSoloRoomTtl => TimeSpan.FromSeconds(WaitingSoloRoomTtlSeconds);
     public int BuildRange => GetInt("BuildRange", 4);
 
-    public MapConfig GetMapOrDefault(int mapId)
+    public MapConfig? GetMapOrDefault(int mapId)
     {
         try
         {

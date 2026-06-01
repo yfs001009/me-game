@@ -26,7 +26,7 @@ namespace GameLogic.SheepBattle.Battle
         public BattleSnapshotInfo CurrentSnapshot { get; private set; }
         public int SelectedBuildingId { get; private set; }
         public long SelectedBuildingInstanceId { get; private set; }
-        public bool IsBuildMode => SelectedBuildingId > 0;
+        public bool IsBuildMode => _buildSkillActive;
         public int BattleElapsedSeconds => _battleStartedRealtime <= 0f ? 0 : Mathf.Max(0, Mathf.FloorToInt(Time.realtimeSinceStartup - _battleStartedRealtime));
 
         private GameObject _mapRoot;
@@ -50,6 +50,7 @@ namespace GameLogic.SheepBattle.Battle
         private GameObject _selectedTowerRangeRoot;
         private GameObject _effectRoot;
         private bool _battleSceneVisible;
+        private bool _buildSkillActive;
         private bool _buildPreviewValid;
         private int _buildPreviewGridX;
         private int _buildPreviewGridY;
@@ -74,7 +75,7 @@ namespace GameLogic.SheepBattle.Battle
         private const float ProjectileDurationSeconds = 0.22f;
         private const float SelectedInfoLineHeight = 0.22f;
         private const int GroundSortingOrder = 0;
-        private const int ObjectSortingOrder = 100;
+        private const int ObjectSortingOrder = 160;
         private const int BuildingSortingOrder = 120;
         private const int PlayerSortingOrder = 140;
         private const int EffectSortingOrder = 180;
@@ -130,6 +131,13 @@ namespace GameLogic.SheepBattle.Battle
 
         public void SelectBuilding(int buildingId)
         {
+            if (_localPlayerCamp == "Troll")
+            {
+                CommonNoticeService.Show("巨魔不能建造", "无法建造");
+                return;
+            }
+
+            _buildSkillActive = true;
             SelectedBuildingId = buildingId;
             SelectedBuildingInstanceId = 0;
             _cameraDragging = false;
@@ -140,6 +148,7 @@ namespace GameLogic.SheepBattle.Battle
 
         public void ExitBuildMode()
         {
+            _buildSkillActive = false;
             SelectedBuildingId = 0;
             SelectedBuildingInstanceId = 0;
             _cameraDragging = false;
@@ -151,7 +160,7 @@ namespace GameLogic.SheepBattle.Battle
 
         public void RequestBuildAt(int gridX, int gridY)
         {
-            if (CurrentBattle == null || SelectedBuildingId <= 0 || !_battleSceneVisible)
+            if (CurrentBattle == null || !_buildSkillActive || SelectedBuildingId <= 0 || !_battleSceneVisible)
             {
                 return;
             }
@@ -179,6 +188,17 @@ namespace GameLogic.SheepBattle.Battle
             RecycleAsync(instanceId).Coroutine();
         }
 
+        public void ClearSelectedBuilding()
+        {
+            if (SelectedBuildingInstanceId <= 0)
+            {
+                return;
+            }
+
+            SelectedBuildingInstanceId = 0;
+            RefreshSelectedBuildingHelpers();
+        }
+
         public void StartMoveInput()
         {
             if (_moving || CurrentBattle == null)
@@ -201,6 +221,25 @@ namespace GameLogic.SheepBattle.Battle
             SelectBuilding(buildingId);
         }
 
+        public void OnOpenBuildPanel()
+        {
+            if (_localPlayerCamp == "Troll")
+            {
+                CommonNoticeService.Show("巨魔不能建造", "无法建造");
+                return;
+            }
+
+            _buildSkillActive = true;
+            SelectedBuildingId = 0;
+            SelectedBuildingInstanceId = 0;
+            _cameraDragging = false;
+            SetBuildPreviewVisible(false);
+            EnsureBuildRangeIndicator();
+            SetBuildRangeVisible(true);
+            FollowLocalPlayer();
+            Log.Info("开启建造技能，等待选择建筑卡片。");
+        }
+
         public void OnBuildAt(int gridX, int gridY)
         {
             RequestBuildAt(gridX, gridY);
@@ -219,6 +258,11 @@ namespace GameLogic.SheepBattle.Battle
         public void OnExitBuildMode()
         {
             ExitBuildMode();
+        }
+
+        public void ApplyExternalSnapshot(BattleSnapshotInfo snapshot)
+        {
+            ApplySnapshot(snapshot);
         }
 
         public void FocusPlayer(long playerId)
@@ -567,11 +611,26 @@ namespace GameLogic.SheepBattle.Battle
         {
             while (_moving && CurrentBattle != null && CurrentBattle.BattleId == battleId)
             {
+                var moveAxis = GetMoveAxis();
                 if (IsBuildMode)
                 {
                     if (Input.GetKeyDown(KeyCode.Escape))
                     {
                         ExitBuildMode();
+                        await UniTask.Yield(PlayerLoopTiming.Update);
+                        continue;
+                    }
+
+                    if (Mathf.Abs(moveAxis.x) > 0.01f || Mathf.Abs(moveAxis.y) > 0.01f)
+                    {
+                        ExitBuildMode();
+                        TrySendMoveCommand(battleId, moveAxis.x, moveAxis.y);
+                        await UniTask.Yield(PlayerLoopTiming.Update);
+                        continue;
+                    }
+
+                    if (TrySelectBuildingFromClick())
+                    {
                         await UniTask.Yield(PlayerLoopTiming.Update);
                         continue;
                     }
@@ -584,23 +643,22 @@ namespace GameLogic.SheepBattle.Battle
                 }
 
                 TrySelectBuildingFromClick();
-                var moveAxis = GetMoveAxis();
                 TrySendMoveCommand(battleId, moveAxis.x, moveAxis.y);
                 await UniTask.Yield(PlayerLoopTiming.Update);
             }
         }
 
-        private void TrySelectBuildingFromClick()
+        private bool TrySelectBuildingFromClick()
         {
             if (!Input.GetMouseButtonDown(0) || IsPointerOverUI())
             {
-                return;
+                return false;
             }
 
             var camera = Camera.main;
             if (camera == null)
             {
-                return;
+                return false;
             }
 
             var ray = camera.ScreenPointToRay(Input.mousePosition);
@@ -609,11 +667,11 @@ namespace GameLogic.SheepBattle.Battle
                 SelectedBuildingInstanceId = instanceId;
                 RefreshSelectedBuildingHelpers();
                 Log.Info($"选中建筑：InstanceId={instanceId}");
-                return;
+                return true;
             }
 
-            SelectedBuildingInstanceId = 0;
-            RefreshSelectedBuildingHelpers();
+            ClearSelectedBuilding();
+            return false;
         }
 
         private static Vector2 GetMoveAxis()
@@ -1066,8 +1124,15 @@ namespace GameLogic.SheepBattle.Battle
 
         private void UpdateBuildPreview()
         {
-            EnsureBuildPreview();
             EnsureBuildRangeIndicator();
+            if (SelectedBuildingId <= 0)
+            {
+                SetBuildPreviewVisible(false);
+                UpdateBuildRangePosition();
+                return;
+            }
+
+            EnsureBuildPreview();
             if (!TryGetMouseGrid(out var gridX, out var gridY))
             {
                 SetBuildPreviewVisible(false);
@@ -1086,6 +1151,11 @@ namespace GameLogic.SheepBattle.Battle
 
         private void TryConfirmBuildPlacement()
         {
+            if (SelectedBuildingId <= 0)
+            {
+                return;
+            }
+
             if (IsPointerOverUI())
             {
                 return;
@@ -1383,8 +1453,19 @@ namespace GameLogic.SheepBattle.Battle
 
         private static void SetRendererColor(GameObject target, Color color)
         {
-            // Runtime package builds can strip or miss shaders used by temporary debug primitives.
-            // Keep these objects on Unity's default material so projectiles and bars never disappear.
+            if (target == null)
+            {
+                return;
+            }
+
+            var renderers = target.GetComponentsInChildren<Renderer>(true);
+            for (var i = 0; i < renderers.Length; i++)
+            {
+                if (renderers[i].material != null)
+                {
+                    renderers[i].material.color = color;
+                }
+            }
         }
 
         private static void SetRenderOrder(GameObject target, int sortingOrder)
@@ -1500,6 +1581,11 @@ namespace GameLogic.SheepBattle.Battle
 
         private void AddSelectedInfoText(Transform parent, string content, float yOffset, float characterSize)
         {
+            AddWorldLabel(parent, content, yOffset, Color.white, UiWorldSortingOrder + 2, characterSize);
+        }
+
+        private void AddWorldLabel(Transform parent, string content, float yOffset, Color color, int sortingOrder, float characterSize = 0.13f)
+        {
             var textObject = new GameObject("SelectedBuildingText");
             textObject.transform.SetParent(parent, false);
             textObject.transform.localPosition = new Vector3(0f, yOffset, 0f);
@@ -1509,11 +1595,11 @@ namespace GameLogic.SheepBattle.Battle
             text.alignment = TextAlignment.Center;
             text.characterSize = characterSize * _tileWorldSize;
             text.fontSize = 32;
-            text.color = Color.white;
+            text.color = color;
             var renderer = textObject.GetComponent<MeshRenderer>();
             if (renderer != null)
             {
-                renderer.sortingOrder = UiWorldSortingOrder + 2;
+                renderer.sortingOrder = sortingOrder;
             }
         }
 
@@ -1588,6 +1674,16 @@ namespace GameLogic.SheepBattle.Battle
             root.transform.SetParent(_effectRoot != null ? _effectRoot.transform : _mapRoot.transform, false);
             root.transform.position = new Vector3(center.x, center.y, -0.94f);
             CreateRangeCircle(root.transform, "RangeSegment", radius, segmentCount, segmentWidth, EffectSortingOrder - 1);
+
+            return root;
+        }
+
+        private GameObject CreateRangeCircle(string objectName, Vector3 center, float radius, int segmentCount, float segmentWidth, int sortingOrder)
+        {
+            var root = new GameObject(objectName);
+            root.transform.SetParent(_effectRoot != null ? _effectRoot.transform : _mapRoot.transform, false);
+            root.transform.position = center;
+            CreateRangeCircle(root.transform, "RangeSegment", radius, segmentCount, segmentWidth, sortingOrder);
 
             return root;
         }
@@ -1740,9 +1836,10 @@ namespace GameLogic.SheepBattle.Battle
 
                 if (layer.name == "shop")
                 {
-                    BuildShopObjects(layer, tileSize);
+                    continue;
                 }
-                else if (layer.name == "monster")
+
+                if (layer.name == "monster")
                 {
                     BuildMonsterObjects(layer, tileSize);
                 }
@@ -1759,10 +1856,19 @@ namespace GameLogic.SheepBattle.Battle
             {
                 var mapObject = layer.objects[i];
                 var shopId = mapObject.GetIntProperty("shop_id", mapObject.GetIntProperty("shopid"));
-                var config = ConfigSystem.Instance.Tables.TbShop.GetOrDefault(shopId);
+                var config = ConfigSystem.Instance.Tables.TbBattleShop.GetOrDefault(shopId);
                 var marker = CreateObjectMarker(mapObject, tileSize, $"shop_{shopId}");
                 marker.name = $"shop_{shopId}_{config?.ShopName ?? mapObject.name}";
-                Log.Info($"Tiled shop point: shopId={shopId}, name={config?.ShopName}, goodsGroup={config?.GoodsGroupId}");
+                SetRendererColor(marker, new Color(1f, 0.72f, 0.16f, 1f));
+                AddWorldLabel(marker.transform, "商店", 0.62f * tileSize, new Color(1f, 0.92f, 0.46f, 1f), UiWorldSortingOrder + 2);
+                var range = Mathf.Max(mapObject.GetFloatProperty("shoprange", 0f), 0f);
+                if (range > 0f)
+                {
+                    var center = marker.transform.position;
+                    CreateRangeCircle($"shop_range_{shopId}", new Vector3(center.x, center.y, -0.89f), range * tileSize, 96, 0.055f * tileSize, ObjectSortingOrder - 1);
+                }
+
+                Log.Info($"Tiled shop point: shopId={shopId}, name={config?.ShopName}, goodsGroup={config?.GoodsGroupId}, range={range:0.##}");
             }
         }
 
@@ -1792,12 +1898,12 @@ namespace GameLogic.SheepBattle.Battle
 
         private GameObject CreateObjectMarker(TiledObjectData mapObject, float tileSize, string fallbackName)
         {
-            var marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            var marker = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             marker.name = string.IsNullOrWhiteSpace(mapObject?.name) ? fallbackName : mapObject.name;
             marker.transform.SetParent(_objectRoot != null ? _objectRoot.transform : _mapRoot.transform, false);
             var grid = ObjectPixelToGrid(mapObject);
-            marker.transform.position = GridToWorld(grid.x, grid.y, -0.1f);
-            marker.transform.localScale = new Vector3(tileSize * 0.55f, tileSize * 0.55f, tileSize * 0.55f);
+            marker.transform.position = GridToWorld(grid.x, grid.y, -0.88f);
+            marker.transform.localScale = new Vector3(tileSize * 0.46f, tileSize * 0.18f, tileSize * 0.46f);
             SetRenderOrder(marker, ObjectSortingOrder);
 
             return marker;

@@ -1,11 +1,12 @@
 using System.Collections.Generic;
 using System.Linq;
+using GameLogic.SheepBattle.Asset;
 using GameLogic.SheepBattle.Config;
 
 namespace GameLogic.SheepBattle.Loadout
 {
     /// <summary>
-    /// MVP 卡组服务。当前使用默认前 6 张建筑卡，后续 LoadoutUI 只需要替换这里的选择结果。
+    /// MVP 卡组服务。当前优先使用已解锁建筑卡，后续 LoadoutUI 只需要替换这里的选择结果。
     /// </summary>
     public sealed class LoadoutService
     {
@@ -21,18 +22,21 @@ namespace GameLogic.SheepBattle.Loadout
 
         public IReadOnlyList<int> GetSelectedBuildingCardIds()
         {
-            EnsureDefaultBuildingCards();
+            EnsureSelectedBuildingCards();
             return selectedBuildingCardIds;
         }
 
-        private void EnsureDefaultBuildingCards()
+        private void EnsureSelectedBuildingCards()
         {
-            if (selectedBuildingCardIds.Count > 0)
+            var unlockedCardIds = AssetController.Instance.Model.UnlockedBuildingCardIds;
+            if (unlockedCardIds.Count <= 0 && selectedBuildingCardIds.Count > 0)
             {
                 return;
             }
 
+            selectedBuildingCardIds.Clear();
             selectedBuildingCardIds.AddRange(ConfigSystem.Instance.Tables.TbBuildingCard.DataList
+                .Where(card => unlockedCardIds.Count <= 0 || unlockedCardIds.Contains(card.CardId))
                 .OrderBy(card => card.SortOrder)
                 .ThenBy(card => card.CardId)
                 .Take(MaxBuildingCards)

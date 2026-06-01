@@ -7,6 +7,8 @@ namespace GameLogic
     {
         void OnSelectBuilding(int buildingId);
 
+        void OnOpenBuildPanel();
+
         void OnBuildAt(int gridX, int gridY);
 
         void OnUpgradeBuilding(long instanceId);

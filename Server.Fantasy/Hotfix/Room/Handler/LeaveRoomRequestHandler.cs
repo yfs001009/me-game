@@ -16,10 +16,10 @@ public sealed class LeaveRoomRequestHandler : MessageRPC<C2G_LeaveRoomRequest, G
     {
         if (!SheepServices.Auth.TryRequireProfile(request.Token, out var profile, out var message))
         {
+            response.ErrorCode = 401;
             response.Success = false;
             response.Message = message;
             response.Room = CreateClosedRoomDetail(request.RoomId);
-            await FTask.CompletedTask;
             return;
         }
 

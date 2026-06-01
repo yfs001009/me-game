@@ -180,3 +180,17 @@ message Battle2G_RecycleBuildingResponse // IAddressResponse
     string Message = 2;
     BattleSnapshotInfo Snapshot = 3;
 }
+
+message G2Battle_BuyShopGoodsRequest // IAddressRequest,Battle2G_BuyShopGoodsResponse
+{
+    PlayerProfileInfo Profile = 1;
+    int32 BattleId = 2;
+    int32 ShopId = 3;
+    int32 GoodsId = 4;
+}
+message Battle2G_BuyShopGoodsResponse // IAddressResponse
+{
+    bool Success = 1;
+    string Message = 2;
+    BattleSnapshotInfo Snapshot = 3;
+}

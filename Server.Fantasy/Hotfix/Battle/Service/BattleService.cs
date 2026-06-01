@@ -20,6 +20,11 @@ public sealed class BattleService
     private const int ElfMaxHp = 100;
     private const int TrollMaxHp = 500;
     private const int TowerProjectileFlightMs = 220;
+    private const int TrollEquipmentSlotCount = 6;
+    private const int TrollBaseAttack = 28;
+    private const float TrollBaseAttackRange = 1.35f;
+    private const int TrollBaseAttackIntervalMs = 900;
+    private const int DefaultBattleShopBuildingId = 401;
     private const string ElfCamp = "Elf";
     private const string TrollCamp = "Troll";
 
@@ -45,6 +50,7 @@ public sealed class BattleService
             battle.LastTickAtUtc = DateTimeOffset.UtcNow;
 
             var mapRules = GetMapRules(battle.MapAsset);
+            CreateMapShopBuildings(battle, mapRules);
             for (var i = 0; i < room.Players.Count; i++)
             {
                 var player = room.Players[i];
@@ -57,6 +63,7 @@ public sealed class BattleService
                 battlePlayer.PosY = spawn.Y;
                 battlePlayer.Hp = ElfMaxHp;
                 battlePlayer.MaxHp = ElfMaxHp;
+                EnsureEquipmentSlots(battlePlayer);
                 battlePlayer.SelectedBuildingCardIds.AddRange(player.SelectedBuildingCardIds);
                 battle.Players.Add(battlePlayer);
             }
@@ -330,6 +337,72 @@ public sealed class BattleService
         }
     }
 
+    public (bool Success, string Message, BattleSnapshotInfo? Snapshot) BuyBattleShopGoods(PlayerProfileInfo profile, C2G_BuyBattleShopGoodsCommand request)
+    {
+        lock (gate)
+        {
+            if (!TryGetRunningBattleAndPlayer(profile, request.BattleId, out var battle, out var player, out var error))
+            {
+                return (false, error, null);
+            }
+
+            AdvanceTick(battle, true);
+            if (player.Camp != TrollCamp)
+            {
+                return (false, "只有巨魔可以购买局内装备。", ToSnapshot(battle));
+            }
+
+            var shop = ConfigSystem.Instance.Tables.TbBattleShop.GetOrDefault(request.ShopId);
+            if (shop == null)
+            {
+                return (false, "商店不存在。", ToSnapshot(battle));
+            }
+
+            if (!string.IsNullOrWhiteSpace(shop.OwnerCamp) && !string.Equals(shop.OwnerCamp, player.Camp, StringComparison.OrdinalIgnoreCase))
+            {
+                return (false, "当前阵营不能使用该商店。", ToSnapshot(battle));
+            }
+
+            var goods = ConfigSystem.Instance.Tables.TbBattleShopGoods.GetOrDefault(request.GoodsId);
+            if (goods == null || goods.GoodsGroupId != shop.GoodsGroupId)
+            {
+                return (false, "商品不存在。", ToSnapshot(battle));
+            }
+
+            var shopBuilding = FindShopBuilding(battle, request.ShopId);
+            if (shopBuilding == null)
+            {
+                return (false, "商店建筑不存在。", ToSnapshot(battle));
+            }
+
+            if (!IsNearShopBuilding(shopBuilding, player.PosX, player.PosY, out var distance, out var range))
+            {
+                return (false, $"距离商店太远。当前 {distance:0.0}，需要 {range:0.0} 内。", ToSnapshot(battle));
+            }
+
+            EnsureEquipmentSlots(player);
+            var slot = player.EquipmentSlots.FirstOrDefault(item => item.ItemId <= 0);
+            if (slot == null)
+            {
+                return (false, "巨魔装备栏已满。", ToSnapshot(battle));
+            }
+
+            if (!TrySpendBattleCurrency(player, goods.Currency, goods.Price, out var spendError))
+            {
+                return (false, spendError, ToSnapshot(battle));
+            }
+
+            slot.ItemId = goods.ItemId;
+            slot.GoodsId = goods.GoodsId;
+            slot.ItemName = goods.ItemName;
+            slot.EffectDesc = goods.EffectDesc;
+            RecalculateTrollStats(player);
+            battle.Tick++;
+            Log.Info($"Troll bought battle shop goods: BattleId={battle.BattleId}, PlayerId={player.PlayerId}, ShopId={shop.ShopId}, GoodsId={goods.GoodsId}, Slot={slot.SlotIndex}");
+            return (true, "购买成功。", ToSnapshot(battle));
+        }
+    }
+
     private bool TryGetBattleAndPlayer(PlayerProfileInfo profile, int battleId, out BattleEntity battle, out BattlePlayerEntity player, out string error)
     {
         battle = null!;
@@ -380,6 +453,7 @@ public sealed class BattleService
             battle.LastTickAtUtc = battle.LastTickAtUtc.AddMilliseconds(ticks * TickMs);
             ResolvePendingTowerHits(battle);
             ApplyBuildingEffects(battle);
+            ApplyTrollAutoAttacks(battle);
         }
     }
 
@@ -515,6 +589,144 @@ public sealed class BattleService
         building.LastEffectTick += Math.Max(1, elapsedTicks / intervalTicks) * intervalTicks;
     }
 
+    private void ApplyTrollAutoAttacks(BattleEntity battle)
+    {
+        foreach (var troll in battle.Players.Where(item => item.Camp == TrollCamp && item.Hp > 0).ToList())
+        {
+            RecalculateTrollStats(troll);
+            var intervalTicks = Math.Max(1, troll.AttackIntervalMs / TickMs);
+            var elapsedTicks = battle.Tick - troll.LastAttackTick;
+            if (elapsedTicks < intervalTicks)
+            {
+                continue;
+            }
+
+            var target = FindTrollAutoAttackTarget(battle, troll);
+            troll.LastAttackTick += Math.Max(1, elapsedTicks / intervalTicks) * intervalTicks;
+            if (target.Player == null && target.Building == null)
+            {
+                continue;
+            }
+
+            var eventId = nextAttackEventId++;
+            if (target.Building != null)
+            {
+                target.Building.Hp = Math.Max(0, target.Building.Hp - troll.Attack);
+                battle.AttackEvents.Add(new BattleAttackEventRecord
+                {
+                    EventId = eventId,
+                    SourcePlayerId = troll.PlayerId,
+                    TargetBuildingInstanceId = target.Building.InstanceId,
+                    FromX = troll.PosX,
+                    FromY = troll.PosY,
+                    ToX = target.TargetX,
+                    ToY = target.TargetY,
+                    Damage = troll.Attack
+                });
+                if (target.Building.Hp <= 0)
+                {
+                    battle.Buildings.Remove(target.Building);
+                }
+            }
+            else if (target.Player != null)
+            {
+                target.Player.Hp = Math.Max(0, target.Player.Hp - troll.Attack);
+                battle.AttackEvents.Add(new BattleAttackEventRecord
+                {
+                    EventId = eventId,
+                    SourcePlayerId = troll.PlayerId,
+                    TargetPlayerId = target.Player.PlayerId,
+                    FromX = troll.PosX,
+                    FromY = troll.PosY,
+                    ToX = target.Player.PosX,
+                    ToY = target.Player.PosY,
+                    Damage = troll.Attack
+                });
+            }
+
+            TrimAttackEvents(battle);
+        }
+    }
+
+    private static (BattlePlayerEntity? Player, BattleBuildingEntity? Building, float TargetX, float TargetY) FindTrollAutoAttackTarget(BattleEntity battle, BattlePlayerEntity troll)
+    {
+        BattlePlayerEntity? bestPlayer = null;
+        BattleBuildingEntity? bestBuilding = null;
+        var bestDistance = float.MaxValue;
+        var bestX = 0f;
+        var bestY = 0f;
+
+        foreach (var elf in battle.Players.Where(item => item.Camp == ElfCamp && item.Hp > 0))
+        {
+            var distance = Distance(troll.PosX, troll.PosY, elf.PosX, elf.PosY);
+            if (distance <= troll.AttackRange && distance < bestDistance)
+            {
+                bestPlayer = elf;
+                bestBuilding = null;
+                bestDistance = distance;
+                bestX = elf.PosX;
+                bestY = elf.PosY;
+            }
+        }
+
+        foreach (var building in battle.Buildings.Where(item => item.Hp > 0 && !IsShopBuilding(item)))
+        {
+            var targetX = building.GridX + building.Width * 0.5f;
+            var targetY = building.GridY + building.Height * 0.5f;
+            var distance = Distance(troll.PosX, troll.PosY, targetX, targetY);
+            if (distance <= troll.AttackRange && distance < bestDistance)
+            {
+                bestPlayer = null;
+                bestBuilding = building;
+                bestDistance = distance;
+                bestX = targetX;
+                bestY = targetY;
+            }
+        }
+
+        return (bestPlayer, bestBuilding, bestX, bestY);
+    }
+
+    private void CreateMapShopBuildings(BattleEntity battle, MapRuleData mapRules)
+    {
+        foreach (var shopPoint in mapRules.Shops)
+        {
+            if (FindShopBuilding(battle, shopPoint.ShopId) != null)
+            {
+                continue;
+            }
+
+            var shop = ConfigSystem.Instance.Tables.TbBattleShop.GetOrDefault(shopPoint.ShopId);
+            var building = GetBuilding(shopPoint.BuildingId) ?? GetBuilding(DefaultBattleShopBuildingId);
+            var width = Math.Max(building?.FootprintWidth ?? 1, 1);
+            var height = Math.Max(building?.FootprintHeight ?? 1, 1);
+            var hp = Math.Max(building?.BaseHp ?? 1, 1);
+            var buildingEntity = Entity.Create<BattleBuildingEntity>(battle.Scene, id: ++nextBuildingInstanceId, isPool: false, isRunEvent: true);
+            buildingEntity.InstanceId = buildingEntity.Id;
+            buildingEntity.OwnerPlayerId = 0;
+            buildingEntity.BuildingId = building?.BuildingId ?? shopPoint.BuildingId;
+            buildingEntity.Level = 1;
+            buildingEntity.GridX = shopPoint.GridX;
+            buildingEntity.GridY = shopPoint.GridY;
+            buildingEntity.Width = width;
+            buildingEntity.Height = height;
+            buildingEntity.Hp = hp;
+            buildingEntity.MaxHp = hp;
+            buildingEntity.LastEffectTick = battle.Tick;
+            buildingEntity.State = $"Shop:{shopPoint.ShopId};Range:{shopPoint.Range:0.###}";
+            battle.Buildings.Add(buildingEntity);
+            Log.Info($"创建地图商店建筑：BattleId={battle.BattleId}，ShopId={shopPoint.ShopId}，Name={shop?.ShopName}，Grid=({shopPoint.GridX},{shopPoint.GridY})，Range={shopPoint.Range:0.##}");
+        }
+    }
+
+    private static void TrimAttackEvents(BattleEntity battle)
+    {
+        if (battle.AttackEvents.Count > 32)
+        {
+            battle.AttackEvents.RemoveRange(0, battle.AttackEvents.Count - 32);
+        }
+    }
+
     private static bool IsOccupied(BattleEntity battle, int gridX, int gridY, int width, int height, long ignoreInstanceId)
     {
         foreach (var building in battle.Buildings)
@@ -607,6 +819,173 @@ public sealed class BattleService
         return false;
     }
 
+    private static bool IsNearShopBuilding(BattleBuildingEntity shopBuilding, float posX, float posY, out float distance, out float range)
+    {
+        var centerX = shopBuilding.GridX + shopBuilding.Width * 0.5f;
+        var centerY = shopBuilding.GridY + shopBuilding.Height * 0.5f;
+        distance = Distance(posX, posY, centerX, centerY);
+        range = Math.Max(ParseShopRange(shopBuilding.State), 1.5f);
+        return range > 0f && distance <= range;
+    }
+
+    private static BattleBuildingEntity? FindShopBuilding(BattleEntity battle, int shopId)
+    {
+        return battle.Buildings.FirstOrDefault(item => IsShopBuilding(item) && GetShopId(item.State) == shopId);
+    }
+
+    private static bool IsShopBuilding(BattleBuildingEntity building)
+    {
+        return building.State?.StartsWith("Shop:", StringComparison.OrdinalIgnoreCase) ?? false;
+    }
+
+    private static int GetShopId(string state)
+    {
+        if (string.IsNullOrWhiteSpace(state))
+        {
+            return 0;
+        }
+
+        var match = Regex.Match(state, @"Shop:(?<value>\d+)", RegexOptions.IgnoreCase);
+        return match.Success && int.TryParse(match.Groups["value"].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value)
+            ? value
+            : 0;
+    }
+
+    private static float ParseShopRange(string state)
+    {
+        if (string.IsNullOrWhiteSpace(state))
+        {
+            return 0f;
+        }
+
+        var match = Regex.Match(state, @"Range:(?<value>\d+(?:\.\d+)?)", RegexOptions.IgnoreCase);
+        return match.Success && float.TryParse(match.Groups["value"].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var value)
+            ? value
+            : 0f;
+    }
+
+    private static bool TrySpendBattleCurrency(BattlePlayerEntity player, string currency, int price, out string error)
+    {
+        error = string.Empty;
+        if (price <= 0)
+        {
+            return true;
+        }
+
+        if (string.Equals(currency, "Wood", StringComparison.OrdinalIgnoreCase))
+        {
+            if (player.Wood < price)
+            {
+                error = "木材不足。";
+                return false;
+            }
+
+            player.Wood -= price;
+            return true;
+        }
+
+        if (player.Gold < price)
+        {
+            error = "金币不足。";
+            return false;
+        }
+
+        player.Gold -= price;
+        return true;
+    }
+
+    private static void EnsureEquipmentSlots(BattlePlayerEntity player)
+    {
+        for (var i = player.EquipmentSlots.Count; i < TrollEquipmentSlotCount; i++)
+        {
+            player.EquipmentSlots.Add(new BattleEquipmentSlotEntity { SlotIndex = i });
+        }
+    }
+
+    private static void RecalculateTrollStats(BattlePlayerEntity player)
+    {
+        if (player.Camp != TrollCamp)
+        {
+            return;
+        }
+
+        EnsureEquipmentSlots(player);
+        var oldMaxHp = player.MaxHp;
+        var attack = TrollBaseAttack;
+        var maxHp = TrollMaxHp;
+        var moveSpeed = 4f;
+        var attackRange = TrollBaseAttackRange;
+        var attackInterval = TrollBaseAttackIntervalMs;
+
+        foreach (var slot in player.EquipmentSlots.Where(item => item.ItemId > 0))
+        {
+            var stats = GetEquipmentStats(slot);
+            attack += stats.Attack;
+            maxHp += stats.Hp;
+            moveSpeed += stats.MoveSpeed;
+            attackRange += stats.AttackRange;
+            attackInterval += stats.AttackIntervalMs;
+        }
+
+        player.Attack = Math.Max(1, attack);
+        player.MaxHp = Math.Max(1, maxHp);
+        player.MoveSpeed = Math.Max(1f, moveSpeed);
+        player.AttackRange = Math.Max(0.5f, attackRange);
+        player.AttackIntervalMs = Math.Max(250, attackInterval);
+        if (oldMaxHp != player.MaxHp)
+        {
+            player.Hp = Math.Clamp(player.Hp + player.MaxHp - oldMaxHp, 1, player.MaxHp);
+        }
+        else
+        {
+            player.Hp = Math.Clamp(player.Hp, 0, player.MaxHp);
+        }
+    }
+
+    private static EquipmentStats GetEquipmentStats(BattleEquipmentSlotEntity slot)
+    {
+        var effect = slot.EffectDesc ?? string.Empty;
+        var parsed = new EquipmentStats(
+            ReadStat(effect, "Attack"),
+            ReadStat(effect, "Hp"),
+            ReadStatFloat(effect, "MoveSpeed"),
+            ReadStatFloat(effect, "AttackRange"),
+            ReadStat(effect, "AttackIntervalMs"));
+        if (parsed != default)
+        {
+            return parsed;
+        }
+
+        return (Math.Abs(slot.ItemId) % 5) switch
+        {
+            1 => new EquipmentStats(18, 0, 0f, 0f, 0),
+            2 => new EquipmentStats(0, 120, 0f, 0f, 0),
+            3 => new EquipmentStats(0, 0, 0.55f, 0f, 0),
+            4 => new EquipmentStats(8, 0, 0f, 0.45f, 0),
+            _ => new EquipmentStats(10, 60, 0.2f, 0f, -80)
+        };
+    }
+
+    private static int ReadStat(string text, string key)
+    {
+        return (int)ReadStatFloat(text, key);
+    }
+
+    private static float ReadStatFloat(string text, string key)
+    {
+        var match = Regex.Match(text, $"{Regex.Escape(key)}\\s*(?<value>[+-]\\s*\\d+(?:\\.\\d+)?)", RegexOptions.IgnoreCase);
+        return match.Success && float.TryParse(match.Groups["value"].Value.Replace(" ", string.Empty), NumberStyles.Float, CultureInfo.InvariantCulture, out var value)
+            ? value
+            : 0f;
+    }
+
+    private static float Distance(float ax, float ay, float bx, float by)
+    {
+        var dx = ax - bx;
+        var dy = ay - by;
+        return MathF.Sqrt(dx * dx + dy * dy);
+    }
+
     private static BuildingConfig? GetBuilding(int buildingId)
     {
         return ConfigSystem.Instance.Tables.TbBuilding.GetOrDefault(buildingId);
@@ -662,6 +1041,11 @@ public sealed class BattleService
         troll.MoveSpeed = 4f;
         troll.MaxHp = TrollMaxHp;
         troll.Hp = TrollMaxHp;
+        troll.Attack = TrollBaseAttack;
+        troll.AttackRange = TrollBaseAttackRange;
+        troll.AttackIntervalMs = TrollBaseAttackIntervalMs;
+        troll.LastAttackTick = battle.Tick;
+        EnsureEquipmentSlots(troll);
         battle.TrollSelected = true;
         battle.Tick++;
         Log.Info($"Battle troll selected: BattleId={battle.BattleId}, PlayerId={troll.PlayerId}, Spawn=({troll.PosX:0.00},{troll.PosY:0.00})");
@@ -726,6 +1110,7 @@ public sealed class BattleService
             LoadTileRuleLayer(text, mapWidth, mapHeight, "no_build", noBuild);
 
             var spawnAreas = new List<SpawnArea>();
+            var shops = new List<ShopPoint>();
             var groupMatch = Regex.Match(
                 text,
                 "<objectgroup[^>]*name=\"birth_area\"[^>]*>(?<content>.*?)</objectgroup>",
@@ -745,8 +1130,34 @@ public sealed class BattleService
                 }
             }
 
-            Log.Info($"Loaded TMX map rules: map={mapAsset}, path={path}, size={mapWidth}x{mapHeight}, birth_area={spawnAreas.Count}");
-            return new MapRuleData(mapWidth, mapHeight, noMove, noBuild, spawnAreas);
+            var shopGroupMatch = Regex.Match(
+                text,
+                "<objectgroup[^>]*name=\"shop\"[^>]*>(?<content>.*?)</objectgroup>",
+                RegexOptions.Singleline | RegexOptions.IgnoreCase);
+            if (shopGroupMatch.Success)
+            {
+                foreach (Match objectMatch in Regex.Matches(shopGroupMatch.Groups["content"].Value, "<object\\b(?<attrs>[^>]*)>(?<content>.*?)</object>", RegexOptions.Singleline | RegexOptions.IgnoreCase))
+                {
+                    var attrs = objectMatch.Groups["attrs"].Value;
+                    var content = objectMatch.Groups["content"].Value;
+                    var shopId = (int)ReadPropertyFloat(content, "shopid", ReadPropertyFloat(content, "shop_id", 0f));
+                    var buildingId = (int)ReadPropertyFloat(content, "buildingid", ReadPropertyFloat(content, "building_id", DefaultBattleShopBuildingId));
+                    if (shopId <= 0)
+                    {
+                        continue;
+                    }
+
+                    shops.Add(new ShopPoint(
+                        shopId,
+                        buildingId,
+                        Math.Clamp((int)MathF.Floor(ReadFloatAttribute(attrs, "x", 0f) / tileWidth), 0, mapWidth - 1),
+                        Math.Clamp((int)MathF.Floor(ReadFloatAttribute(attrs, "y", 0f) / tileHeight), 0, mapHeight - 1),
+                        Math.Max(ReadPropertyFloat(content, "shoprange", 0f), 0f)));
+                }
+            }
+
+            Log.Info($"Loaded TMX map rules: map={mapAsset}, path={path}, size={mapWidth}x{mapHeight}, birth_area={spawnAreas.Count}, shop={shops.Count}");
+            return new MapRuleData(mapWidth, mapHeight, noMove, noBuild, spawnAreas, shops);
         }
 
         Log.Warning($"TMX map rules not found, using fallback rules. map={mapAsset}");
@@ -818,6 +1229,14 @@ public sealed class BattleService
         return match.Success ? match.Groups["value"].Value : string.Empty;
     }
 
+    private static float ReadPropertyFloat(string text, string name, float defaultValue)
+    {
+        var match = Regex.Match(text, $"<property\\b[^>]*name=\"{Regex.Escape(name)}\"[^>]*value=\"(?<value>[^\"]+)\"", RegexOptions.IgnoreCase);
+        return match.Success && float.TryParse(match.Groups["value"].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var value)
+            ? value
+            : defaultValue;
+    }
+
     private static string NormalizeMapAssetName(string mapAsset)
     {
         if (string.IsNullOrWhiteSpace(mapAsset))
@@ -867,7 +1286,9 @@ public sealed class BattleService
             FromY = item.FromY,
             ToX = item.ToX,
             ToY = item.ToY,
-            Damage = item.Damage
+            Damage = item.Damage,
+            SourcePlayerId = item.SourcePlayerId,
+            TargetBuildingInstanceId = item.TargetBuildingInstanceId
         }));
         return snapshot;
     }
@@ -886,25 +1307,40 @@ public sealed class BattleService
             PosY = player.PosY,
             MoveSpeed = player.MoveSpeed,
             Hp = player.Hp,
-            MaxHp = player.MaxHp
+            MaxHp = player.MaxHp,
+            Attack = player.Attack,
+            AttackRange = player.AttackRange,
+            AttackIntervalMs = player.AttackIntervalMs
         };
         state.SelectedBuildingCardIds.AddRange(player.SelectedBuildingCardIds);
+        EnsureEquipmentSlots(player);
+        state.EquipmentSlots.AddRange(player.EquipmentSlots.Select(slot => new BattleEquipmentSlotInfo
+        {
+            SlotIndex = slot.SlotIndex,
+            ItemId = slot.ItemId,
+            GoodsId = slot.GoodsId,
+            ItemName = slot.ItemName,
+            EffectDesc = slot.EffectDesc
+        }));
         return state;
     }
 
     private readonly record struct SpawnArea(float X, float Y, float Width, float Height);
+    private readonly record struct ShopPoint(int ShopId, int BuildingId, int GridX, int GridY, float Range);
+    private readonly record struct EquipmentStats(int Attack, int Hp, float MoveSpeed, float AttackRange, int AttackIntervalMs);
 
     private sealed class MapRuleData
     {
-        public static MapRuleData Fallback { get; } = new(100, 100, new bool[100 * 100], new bool[100 * 100], new List<SpawnArea>());
+        public static MapRuleData Fallback { get; } = new(100, 100, new bool[100 * 100], new bool[100 * 100], new List<SpawnArea>(), new List<ShopPoint>());
 
-        public MapRuleData(int width, int height, bool[] noMove, bool[] noBuild, List<SpawnArea> spawnAreas)
+        public MapRuleData(int width, int height, bool[] noMove, bool[] noBuild, List<SpawnArea> spawnAreas, List<ShopPoint> shops)
         {
             Width = Math.Max(width, 1);
             Height = Math.Max(height, 1);
             NoMove = noMove ?? new bool[Width * Height];
             NoBuild = noBuild ?? new bool[Width * Height];
             SpawnAreas = spawnAreas ?? new List<SpawnArea>();
+            Shops = shops ?? new List<ShopPoint>();
         }
 
         public int Width { get; }
@@ -912,6 +1348,7 @@ public sealed class BattleService
         public bool[] NoMove { get; }
         public bool[] NoBuild { get; }
         public List<SpawnArea> SpawnAreas { get; }
+        public List<ShopPoint> Shops { get; }
         public float MaxPosX => Math.Max(Width - 0.001f, 0f);
         public float MaxPosY => Math.Max(Height - 0.001f, 0f);
 

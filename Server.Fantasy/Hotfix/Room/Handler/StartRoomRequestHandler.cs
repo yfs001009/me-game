@@ -16,9 +16,9 @@ public sealed class StartRoomRequestHandler : MessageRPC<C2G_StartRoomRequest, G
     {
         if (!SheepServices.Auth.TryRequireProfile(request.Token, out var profile, out var message))
         {
+            response.ErrorCode = 401;
             response.Success = false;
             response.Message = message;
-            await FTask.CompletedTask;
             return;
         }
 

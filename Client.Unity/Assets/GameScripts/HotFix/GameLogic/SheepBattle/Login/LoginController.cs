@@ -17,12 +17,12 @@ namespace GameLogic.SheepBattle.Login
 
         public void OnLogin(string account, string password)
         {
-            Login(account, password);
+            LoginAsync(account, password).Coroutine();
         }
 
         public void OnRegister(string account, string password, string nickname)
         {
-            Register(account, password, nickname);
+            RegisterAsync(account, password, nickname).Coroutine();
         }
 
         public void OnSubmitNickname(string nickname)
@@ -30,7 +30,17 @@ namespace GameLogic.SheepBattle.Login
             SubmitNickname(nickname);
         }
 
-        public async void Login(string account, string password)
+        public FTask Login(string account, string password)
+        {
+            return LoginAsync(account, password);
+        }
+
+        public FTask Register(string account, string password, string nickname)
+        {
+            return RegisterAsync(account, password, nickname);
+        }
+
+        private async FTask LoginAsync(string account, string password)
         {
             try
             {
@@ -69,7 +79,7 @@ namespace GameLogic.SheepBattle.Login
             }
         }
 
-        public async void Register(string account, string password, string nickname)
+        private async FTask RegisterAsync(string account, string password, string nickname)
         {
             try
             {

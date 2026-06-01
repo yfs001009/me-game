@@ -1,0 +1,7 @@
+
+��Ticket普通抽奖券��UseDirectlyLotteryNormalIcon_Item_LotteryTicket!用于普通奖池抽奖一次。��Ticket高级抽奖券��UseDirectlyLotteryPremiumIcon_Item_PremiumLotteryTicket!用于高级奖池抽奖一次。�M
+Consumable双倍经验卡cActivateBuff	DoubleExp3600Icon_Item_DoubleExp'使用后获得 1 小时双倍经验。�N
+Consumable双倍金币卡cActivateBuff
+DoubleGold3600Icon_Item_DoubleGold'使用后获得 1 小时双倍金币。��Trial精灵游侠体验卡cUseDirectlyCharacterTrial
+1002:86400Icon_Item_ElfRangerTrial*使用后获得精灵游侠 1 天体验。��Trial雾行者体验卡cUseDirectlyCharacterTrial
+2002:86400Icon_Item_TrollMistTrial'使用后获得雾行者 1 天体验。�Fragment精灵游侠碎片�ExchangeCharacterShard1002Icon_Item_ElfRangerShard!集齐后可兑换精灵游侠。�Fragment防御塔卡片碎片�ExchangeBuildingCardShard1003Icon_Item_TowerCardShard'集齐后可兑换防御塔建筑卡。�yChest新手补给箱c	OpenChestRewardPackageNewPlayerSupplyIcon_Item_NewPlayerChest*打开后获得新手阶段常用奖励。��Material通用升级石�NoneUpgradeMaterial	UniversalIcon_Item_UpgradeStone'用于后续角色或建筑卡升级。

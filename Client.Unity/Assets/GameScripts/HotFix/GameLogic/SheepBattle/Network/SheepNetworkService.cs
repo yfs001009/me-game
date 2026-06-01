@@ -117,6 +117,134 @@ namespace GameLogic.SheepBattle.Network
             return response;
         }
 
+        public async FTask<G2C_CharacterListResponse> RequestCharacterListAsync()
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_CharacterListRequest(Token);
+            Log.Info($"角色列表获取结果：成功={response.Success}，数量={response.Characters.Count}，消息={response.Message}");
+            return response;
+        }
+
+        public async FTask<G2C_SelectCharacterResponse> SelectCharacterAsync(int characterId)
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_SelectCharacterRequest(Token, characterId);
+            Log.Info($"选择角色结果：成功={response.Success}，角色ID={characterId}，消息={response.Message}");
+            return response;
+        }
+
+        public async FTask<G2C_AssetSnapshotResponse> RequestAssetSnapshotAsync()
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_AssetSnapshotRequest(Token);
+            Log.Info($"资产快照结果：成功={response.Success}，货币={response.Snapshot?.Currencies.Count ?? 0}，道具={response.Snapshot?.BagItems.Count ?? 0}，消息={response.Message}");
+            return response;
+        }
+
+        public async FTask<G2C_UseItemResponse> UseItemAsync(int itemId, int count = 1)
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_UseItemRequest(Token, itemId, count);
+            Log.Info($"使用道具结果：成功={response.Success}，道具ID={itemId}，数量={count}，消息={response.Message}");
+            return response;
+        }
+
+        public async FTask<G2C_OutgameShopListResponse> RequestOutgameShopListAsync(string shopType = "", string activityId = "", string featureId = "")
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_OutgameShopListRequest(Token, shopType, activityId, featureId);
+            Log.Info($"局外商店列表结果：成功={response.Success}，数量={response.Shops.Count}，类型={shopType}，活动={activityId}，开放={featureId}，消息={response.Message}");
+            return response;
+        }
+
+        public async FTask<G2C_BuyOutgameShopGoodsResponse> BuyOutgameShopGoodsAsync(int goodsId, int count = 1)
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_BuyOutgameShopGoodsRequest(Token, goodsId, count);
+            Log.Info($"局外商店购买结果：成功={response.Success}，商品ID={goodsId}，数量={count}，消息={response.Message}");
+            return response;
+        }
+
+        public async FTask<G2C_MailListResponse> RequestMailListAsync()
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_MailListRequest(Token);
+            Log.Info($"邮件列表结果：成功={response.Success}，数量={response.Mails.Count}，消息={response.Message}");
+            return response;
+        }
+
+        public async FTask<G2C_ReadMailResponse> ReadMailAsync(long mailId)
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_ReadMailRequest(Token, mailId);
+            Log.Info($"读取邮件结果：成功={response.Success}，邮件ID={mailId}，消息={response.Message}");
+            return response;
+        }
+
+        public async FTask<G2C_ClaimMailAttachmentResponse> ClaimMailAttachmentAsync(long mailId)
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_ClaimMailAttachmentRequest(Token, mailId);
+            Log.Info($"领取邮件附件结果：成功={response.Success}，邮件ID={mailId}，消息={response.Message}");
+            return response;
+        }
+
+        public async FTask<G2C_LotteryDrawResponse> LotteryDrawAsync(string pool, int count)
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_LotteryDrawRequest(Token, pool, count);
+            Log.Info($"抽奖结果：成功={response.Success}，奖池={pool}，次数={count}，消息={response.Message}");
+            return response;
+        }
+
+        public async FTask<G2C_OutgameTaskListResponse> RequestOutgameTaskListAsync(string taskType = "", string activityId = "", string featureId = "")
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_OutgameTaskListRequest(Token, taskType, activityId, featureId);
+            Log.Info($"局外任务列表结果：成功={response.Success}，数量={response.Tasks.Count}，类型={taskType}，活动={activityId}，开放={featureId}，消息={response.Message}");
+            return response;
+        }
+
+        public async FTask<G2C_ClaimOutgameTaskRewardResponse> ClaimOutgameTaskRewardAsync(int taskId)
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_ClaimOutgameTaskRewardRequest(Token, taskId);
+            Log.Info($"局外任务领奖结果：成功={response.Success}，任务ID={taskId}，消息={response.Message}");
+            return response;
+        }
+
+        public async FTask<G2C_SocialListResponse> RequestSocialListAsync(string viewMode, string keyword)
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_SocialListRequest(Token, viewMode, keyword);
+            Log.Info($"社交列表结果：成功={response.Success}，视图={viewMode}，数量={response.Players.Count}，消息={response.Message}");
+            return response;
+        }
+
+        public async FTask<G2C_FollowPlayerResponse> FollowPlayerAsync(long targetPlayerId, bool follow, string viewMode)
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_FollowPlayerRequest(Token, targetPlayerId, follow, viewMode);
+            Log.Info($"关注操作结果：成功={response.Success}，目标={targetPlayerId}，关注={follow}，消息={response.Message}");
+            return response;
+        }
+
+        public async FTask<G2C_ChatHistoryResponse> RequestChatHistoryAsync(int channelType, long channelId, int limit = 50)
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_ChatHistoryRequest(Token, channelType, channelId, limit);
+            Log.Info($"聊天记录结果：成功={response.Success}，频道={channelType}:{channelId}，数量={response.Messages.Count}，消息={response.Message}");
+            return response;
+        }
+
+        public async FTask<G2C_SendChatMessageResponse> SendChatMessageAsync(ChatMessageTreeInfo messageTree)
+        {
+            await EnsureConnectedAsync();
+            var response = await Runtime.Session.C2G_SendChatMessageRequest(Token, messageTree);
+            Log.Info($"发送聊天结果：成功={response.Success}，消息={response.Message}");
+            return response;
+        }
+
         public async FTask<G2C_StartMatchResponse> StartMatchAsync(string mode)
         {
             await EnsureConnectedAsync();
@@ -219,6 +347,14 @@ namespace GameLogic.SheepBattle.Network
             await EnsureBattleConnectedAsync();
             var response = await battleSession.C2G_RecycleBuildingCommand(Token, battleId, buildingInstanceId);
             Log.Info($"回收建筑结果：成功={response.Success}，BattleId={battleId}，InstanceId={buildingInstanceId}，消息={response.Message}");
+            return response;
+        }
+
+        public async FTask<G2C_BuyBattleShopGoodsCommandResponse> BuyBattleShopGoodsAsync(int battleId, int shopId, int goodsId)
+        {
+            await EnsureBattleConnectedAsync();
+            var response = await battleSession.C2G_BuyBattleShopGoodsCommand(Token, battleId, shopId, goodsId);
+            Log.Info($"局内商店购买结果：成功={response.Success}，BattleId={battleId}，ShopId={shopId}，GoodsId={goodsId}，消息={response.Message}");
             return response;
         }
 

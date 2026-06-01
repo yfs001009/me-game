@@ -1,4 +1,4 @@
-﻿using Fantasy;
+using Fantasy;
 using Fantasy.Async;
 using Fantasy.Network;
 using Fantasy.Network.Interface;
@@ -16,7 +16,6 @@ public sealed class StartMatchRequestHandler : MessageRPC<C2G_StartMatchRequest,
         if (!SheepServices.Auth.TryRequireProfile(request.Token, out var profile, out _))
         {
             response.ErrorCode = 401;
-            await FTask.CompletedTask;
             return;
         }
 

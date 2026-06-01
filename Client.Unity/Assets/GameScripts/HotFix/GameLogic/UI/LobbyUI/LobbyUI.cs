@@ -1,5 +1,14 @@
+using GameLogic.SheepBattle.Asset;
+using GameLogic.SheepBattle.Character;
+using GameLogic.SheepBattle.Chat;
+using GameLogic.SheepBattle.Common;
 using GameLogic.SheepBattle.Event;
 using GameLogic.SheepBattle.Lobby;
+using GameLogic.SheepBattle.Mail;
+using GameLogic.SheepBattle.Shop;
+using GameLogic.SheepBattle.Social;
+using GameLogic.SheepBattle.Task;
+using System.Linq;
 using TEngine;
 using UnityEngine.UI;
 
@@ -13,47 +22,62 @@ namespace GameLogic
         private Text _txtGold;
         private Text _txtGem;
         private Text _txtCrystal;
-        private Text _txtLobby;
-        private Text _txtStatus;
-        private Text _txtRoomCount;
-        private Text _txtMatchState;
-        private Text _txtLoadout;
-        private Button _btnRefresh;
-        private Button _btnStartMatch;
-        private Button _btnCreateRoom;
-        private Button _btnJoinRoom;
+        private Button _btnBattle;
+        private Button _btnDungeon;
+        private Button _btnCustom;
+        private Button _btnBag;
+        private Button _btnCard;
+        private Button _btnHero;
+        private Button _btnFriend;
+        private Button _btnMail;
+        private Button _btnShop;
+        private Button _btnChat;
+        private Text _txtLatestChat;
 
         protected override void ScriptGenerator()
         {
             _txtPlayer = FindChildComponent<Text>("m_topBar/m_playerPanel/m_txtPlayerName");
-            _txtLevel = FindChildComponent<Text>("m_topBar/m_playerPanel/m_txtLevel");
+            _txtLevel = FindChildComponent<Text>("m_topBar/m_playerPanel/m_imgLevel/m_txtLevel");
             _txtGold = FindChildComponent<Text>("m_topBar/m_currencyGold/m_txtValue");
             _txtGem = FindChildComponent<Text>("m_topBar/m_currencyGem/m_txtValue");
             _txtCrystal = FindChildComponent<Text>("m_topBar/m_currencyCrystal/m_txtValue");
-            _txtLobby = FindChildComponent<Text>("m_mainPanel/m_txtLobbySummary");
-            _txtStatus = FindChildComponent<Text>("m_mainPanel/m_txtStatus");
-            _txtRoomCount = FindChildComponent<Text>("m_mainPanel/m_statRooms/m_txtValue");
-            _txtMatchState = FindChildComponent<Text>("m_mainPanel/m_statMatch/m_txtValue");
-            _txtLoadout = FindChildComponent<Text>("m_mainPanel/m_statLoadout/m_txtValue");
-            _btnRefresh = FindChildComponent<Button>("m_bottomBar/m_btnRefresh");
-            _btnStartMatch = FindChildComponent<Button>("m_bottomBar/m_btnStartMatch");
-            _btnCreateRoom = FindChildComponent<Button>("m_bottomBar/m_btnCreateRoom");
-            _btnJoinRoom = FindChildComponent<Button>("m_bottomBar/m_btnRoomList");
+            _btnBattle = FindChildComponent<Button>("m_mainPanel/m_btnBattle")
+                         ?? FindChildComponent<Button>("m_mainPanel/m_btnBag (3)");
+            _btnDungeon = FindChildComponent<Button>("m_mainPanel/m_btnDungeon");
+            _btnCustom = FindChildComponent<Button>("m_mainPanel/m_btnCustom");
+            _btnBag = FindChildComponent<Button>("m_bottomBar/m_btnBag");
+            _btnCard = FindChildComponent<Button>("m_bottomBar/m_btnCard");
+            _btnHero = FindChildComponent<Button>("m_bottomBar/m_btnHero");
+            _btnFriend = FindChildComponent<Button>("m_topBar/m_btnFriend");
+            _btnMail = FindChildComponent<Button>("m_topBar/m_btnMail");
+            _btnShop = FindChildComponent<Button>("m_sideMenu/m_btnShop");
+            _btnChat = FindChildComponent<Button>("m_bottomBar/m_btnChat");
+            _txtLatestChat = FindChildComponent<Text>("m_bottomBar/m_btnChat/m_txtLatestChat");
         }
 
         protected override void RegisterEvent()
         {
-            _btnRefresh?.onClick.AddListener(OnClickRefreshCommand);
-            _btnStartMatch?.onClick.AddListener(OnClickStartMatchCommand);
-            _btnCreateRoom?.onClick.AddListener(OnClickCreateRoom);
-            _btnJoinRoom?.onClick.AddListener(OnClickJoinRoomCommand);
+            _btnBattle?.onClick.AddListener(OnClickBattle);
+            _btnDungeon?.onClick.AddListener(OnClickRoomList);
+            _btnCustom?.onClick.AddListener(OnClickCreateRoom);
+            _btnBag?.onClick.AddListener(OnClickBag);
+            _btnCard?.onClick.AddListener(OnClickCard);
+            _btnHero?.onClick.AddListener(OnClickHero);
+            _btnFriend?.onClick.AddListener(OnClickFriend);
+            _btnMail?.onClick.AddListener(OnClickMail);
+            _btnShop?.onClick.AddListener(OnClickShop);
+            _btnChat?.onClick.AddListener(OnClickChat);
             AddUIEvent<LobbyViewChangedEvent>(OnLobbyViewChanged);
             AddUIEvent<LobbyStatusChangedEvent>(OnLobbyStatusChanged);
+            AddUIEvent<AssetViewChangedEvent>(OnAssetViewChanged);
+            AddUIEvent<ChatViewChangedEvent>(OnChatViewChanged);
         }
 
         protected override void OnCreate()
         {
             ApplyView(LobbyController.Instance.GetCurrentLobbyView());
+            AssetController.Instance.RefreshAsync().Coroutine();
+            ChatController.Instance.RefreshCompositeAsync().Coroutine();
         }
 
         protected override void OnRefresh()
@@ -67,32 +91,16 @@ namespace GameLogic
             var level = viewModel?.Level > 0 ? viewModel.Level : 1;
 
             SetText(_txtPlayer, playerName);
-            SetText(_txtLevel, $"Lv.{level}");
-            SetText(_txtGold, "12,800");
-            SetText(_txtGem, "680");
-            SetText(_txtCrystal, "96");
-            SetText(_txtRoomCount, viewModel == null ? "- 个" : $"{viewModel.RoomCount} 个");
-            SetText(_txtMatchState, viewModel?.IsMatching == true ? $"等待 {viewModel.MatchEstimatedSeconds}s" : "空闲");
-            SetText(_txtLoadout, "默认 6 张");
-
-            if (_txtLobby != null)
-            {
-                _txtLobby.text = viewModel == null
-                    ? "大厅数据加载中"
-                    : $"当前房间 {viewModel.RoomCount} 个  |  可加入 {FormatJoinableRoom(viewModel)}";
-            }
-
-            SetStatus(viewModel?.IsMatching == true ? "状态：正在匹配队列中" : "状态：已进入大厅");
+            SetText(_txtLevel, level.ToString());
+            ApplyAssetView(AssetController.Instance.Model);
         }
 
-        private static string FormatJoinableRoom(LobbyViewModel viewModel)
+        private void ApplyAssetView(AssetViewModel viewModel)
         {
-            if (viewModel.JoinableRoomId <= 0)
-            {
-                return "暂无";
-            }
-
-            return $"{viewModel.JoinableRoomName} {viewModel.JoinableRoomCurrentPlayers}/{viewModel.JoinableRoomMaxPlayers}";
+            // Currency is a pure numeric asset, so the lobby top bar reads it from AssetSnapshot instead of the bag.
+            SetText(_txtGold, FormatAmount(viewModel.GetCurrencyAmount("Gold")));
+            SetText(_txtGem, FormatAmount(viewModel.GetCurrencyAmount("Diamond")));
+            SetText(_txtCrystal, FormatAmount(viewModel.GetCurrencyAmount("EventToken")));
         }
 
         private void OnLobbyViewChanged(LobbyViewChangedEvent eventData)
@@ -102,20 +110,25 @@ namespace GameLogic
 
         private void OnLobbyStatusChanged(LobbyStatusChangedEvent eventData)
         {
-            SetStatus(eventData.Status);
+            Log.Info(eventData.Status);
         }
 
-        private void OnClickRefreshCommand()
+        private void OnAssetViewChanged(AssetViewChangedEvent eventData)
         {
-            GameEvent.Get<ILobbyCommand>()?.OnRefreshLobby();
+            ApplyAssetView(eventData.ViewModel);
         }
 
-        private void OnClickStartMatchCommand()
+        private void OnChatViewChanged(ChatViewChangedEvent eventData)
+        {
+            RefreshLatestChat(eventData.ViewModel);
+        }
+
+        private void OnClickBattle()
         {
             GameEvent.Get<ILobbyCommand>()?.OnStartMatch();
         }
 
-        private void OnClickJoinRoomCommand()
+        private void OnClickRoomList()
         {
             GameEvent.Get<ILobbyCommand>()?.OnOpenRoomList();
         }
@@ -125,10 +138,90 @@ namespace GameLogic
             GameModule.UI.ShowUIAsync<CreateRoomUI>();
         }
 
-        private void SetStatus(string text)
+        private void OnClickBag()
         {
-            SetText(_txtStatus, text);
-            Log.Info(text);
+            OpenBagAsync().Coroutine();
+        }
+
+        private async Fantasy.Async.FTask OpenBagAsync()
+        {
+            var view = await AssetController.Instance.RefreshAsync();
+            GameModule.UI.ShowUIAsync<BagUI>(view);
+        }
+
+        private void OnClickCard()
+        {
+            CommonNoticeService.Show("当前版本使用默认前 6 张建筑卡入局，LoadoutUI 后续接入这里。", "卡组");
+        }
+
+        private void OnClickHero()
+        {
+            OpenCharacterAsync().Coroutine();
+        }
+
+        private async Fantasy.Async.FTask OpenCharacterAsync()
+        {
+            var view = await CharacterController.Instance.RefreshAsync();
+            GameModule.UI.ShowUIAsync<CharacterUI>(view);
+        }
+
+        private void OnClickFriend()
+        {
+            OpenSocialAsync().Coroutine();
+        }
+
+        private async Fantasy.Async.FTask OpenSocialAsync()
+        {
+            var view = await SocialController.Instance.RefreshAsync(SocialViewModel.FollowingMode);
+            GameModule.UI.ShowUIAsync<SocialUI>(view);
+        }
+
+        private void OnClickMail()
+        {
+            OpenMailAsync().Coroutine();
+        }
+
+        private async Fantasy.Async.FTask OpenMailAsync()
+        {
+            var view = await MailController.Instance.RefreshAsync();
+            GameModule.UI.ShowUIAsync<MailUI>(view);
+        }
+
+        private void OnClickShop()
+        {
+            OpenShopAsync().Coroutine();
+        }
+
+        private async Fantasy.Async.FTask OpenShopAsync()
+        {
+            var view = await ShopController.Instance.RefreshAsync();
+            await TaskController.Instance.RefreshAsync();
+            GameModule.UI.ShowUIAsync<ShopUI>(view);
+        }
+
+        private void OnClickChat()
+        {
+            OpenChatAsync().Coroutine();
+        }
+
+        private async Fantasy.Async.FTask OpenChatAsync()
+        {
+            var view = await ChatController.Instance.RefreshCompositeAsync();
+            GameModule.UI.ShowUIAsync<ChatUI>(view);
+        }
+
+        private void RefreshLatestChat(ChatViewModel viewModel)
+        {
+            var latest = viewModel?.CompositeMessages?.LastOrDefault();
+            if (latest == null)
+            {
+                SetText(_txtLatestChat, string.Empty);
+                return;
+            }
+
+            var sender = string.IsNullOrWhiteSpace(latest.UserName) ? latest.UnitId.ToString() : latest.UserName;
+            var content = latest.Nodes == null ? string.Empty : string.Concat(latest.Nodes.Select(node => node?.Content ?? string.Empty));
+            SetText(_txtLatestChat, $"{sender}：{content}");
         }
 
         private static void SetText(Text text, string value)
@@ -137,6 +230,11 @@ namespace GameLogic
             {
                 text.text = value;
             }
+        }
+
+        private static string FormatAmount(long amount)
+        {
+            return amount.ToString("N0");
         }
     }
 }

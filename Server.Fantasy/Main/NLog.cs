@@ -26,25 +26,31 @@ namespace Fantasy
         /// <param name="processMode"></param>
         public void Initialize(ProcessMode processMode)
         {
+            var configuration = LogManager.Configuration;
+            if (configuration == null)
+            {
+                return;
+            }
+
             // 非Benchmark模式、根据不同的运行模式来选择日志的方式
             switch (processMode)
             {
                 case ProcessMode.Develop:
                 {
-                    LogManager.Configuration.RemoveRuleByName("ServerDebug");
-                    LogManager.Configuration.RemoveRuleByName("ServerTrace");
-                    LogManager.Configuration.RemoveRuleByName("ServerInfo");
-                    LogManager.Configuration.RemoveRuleByName("ServerWarn");
-                    LogManager.Configuration.RemoveRuleByName("ServerError");
+                    configuration.RemoveRuleByName("ServerDebug");
+                    configuration.RemoveRuleByName("ServerTrace");
+                    configuration.RemoveRuleByName("ServerInfo");
+                    configuration.RemoveRuleByName("ServerWarn");
+                    configuration.RemoveRuleByName("ServerError");
                     break;
                 }
                 case ProcessMode.Release:
                 {
-                    LogManager.Configuration.RemoveRuleByName("ConsoleTrace");
-                    LogManager.Configuration.RemoveRuleByName("ConsoleDebug");
-                    LogManager.Configuration.RemoveRuleByName("ConsoleInfo");
-                    LogManager.Configuration.RemoveRuleByName("ConsoleWarn");
-                    LogManager.Configuration.RemoveRuleByName("ConsoleError");
+                    configuration.RemoveRuleByName("ConsoleTrace");
+                    configuration.RemoveRuleByName("ConsoleDebug");
+                    configuration.RemoveRuleByName("ConsoleInfo");
+                    configuration.RemoveRuleByName("ConsoleWarn");
+                    configuration.RemoveRuleByName("ConsoleError");
                     break;
                 }
             }

@@ -1,0 +1,9 @@
+root = true
+
+[Client.Unity/Assets/GameScripts/HotFix/GameProto/LubanLib/*.cs]
+dotnet_diagnostic.CS8602.severity = none
+dotnet_diagnostic.CS8604.severity = none
+dotnet_diagnostic.CS8618.severity = none
+dotnet_diagnostic.CS8765.severity = none
+dotnet_diagnostic.CS8767.severity = none
+

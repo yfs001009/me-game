@@ -20,9 +20,9 @@ namespace GameLogic
 
         protected override void ScriptGenerator()
         {
-            _listRoot = FindChild("m_imgPanel/m_listRooms") as RectTransform;
+            _listRoot = FindListContent("m_imgPanel/m_listRooms");
             _txtEmpty = FindChildComponent<Text>("m_imgPanel/m_listRooms/m_txtEmpty");
-            _roomTemplate = FindChildComponent<Button>("m_imgPanel/m_listRooms/m_btnRoomTemplate");
+            _roomTemplate = FindListComponent<Button>("m_imgPanel/m_listRooms", "m_btnRoomTemplate");
             _btnClose = FindChildComponent<Button>("m_imgPanel/m_btnClose");
             _btnRefresh = FindChildComponent<Button>("m_imgPanel/m_btnRefresh");
         }
@@ -67,8 +67,6 @@ namespace GameLogic
             var button = GetOrCreateRoomItem(index);
             button.gameObject.SetActive(true);
             button.name = $"m_btnRoom_{room.RoomId}";
-            var rect = button.transform as RectTransform;
-            rect.anchoredPosition = new Vector2(0f, -index * 78f);
 
             var label = button.GetComponentInChildren<Text>();
             var privacy = room.IsPrivate ? "私密" : "公开";
@@ -114,6 +112,18 @@ namespace GameLogic
             }
 
             GameEvent.Get<ILobbyCommand>()?.OnJoinRoom(roomSummary.RoomId, string.Empty);
+        }
+
+        private RectTransform FindListContent(string listPath)
+        {
+            return FindChild($"{listPath}/Viewport/Content") as RectTransform
+                   ?? FindChild(listPath) as RectTransform;
+        }
+
+        private T FindListComponent<T>(string listPath, string name) where T : Component
+        {
+            return FindChildComponent<T>($"{listPath}/Viewport/Content/{name}")
+                   ?? FindChildComponent<T>($"{listPath}/{name}");
         }
     }
 }

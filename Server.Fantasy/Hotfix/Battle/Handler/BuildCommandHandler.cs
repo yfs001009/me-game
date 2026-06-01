@@ -13,9 +13,9 @@ public sealed class BuildCommandHandler : MessageRPC<C2G_BuildCommand, G2C_Build
     {
         if (!SheepServices.Auth.TryRequireProfile(request.Token, out var profile, out var message))
         {
+            response.ErrorCode = 401;
             response.Success = false;
             response.Message = message;
-            await FTask.CompletedTask;
             return;
         }
 
@@ -25,6 +25,10 @@ public sealed class BuildCommandHandler : MessageRPC<C2G_BuildCommand, G2C_Build
         if (result.Snapshot != null)
         {
             response.Snapshot = result.Snapshot;
+        }
+        if (response.Success)
+        {
+            SheepServices.Tasks.AddProgress(profile.PlayerId, "Battle.Build.Count", 1);
         }
     }
 }

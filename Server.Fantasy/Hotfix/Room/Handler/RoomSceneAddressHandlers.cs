@@ -150,7 +150,6 @@ public sealed class StartRoomAddressHandler : AddressRPC<Scene, G2Room_StartRoom
             {
                 response.Battle = result.Battle;
             }
-            await FTask.CompletedTask;
             return;
         }
 
