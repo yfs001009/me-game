@@ -14,9 +14,11 @@ namespace GameLogic
     {
         private Button _btnClose;
         private Button _btnRefresh;
+        private RectTransform _listContainer;
         private RectTransform _listRoot;
         private Button _itemTemplate;
         private Text _txtEmpty;
+        private RectTransform _detailContainer;
         private Text _txtDetailName;
         private Text _txtDetailDesc;
         private Button _btnUse;
@@ -30,10 +32,13 @@ namespace GameLogic
         {
             _btnClose = FindChildComponent<Button>("m_imgPanel/m_btnClose");
             _btnRefresh = FindChildComponent<Button>("m_imgPanel/m_btnRefresh");
+            _listContainer = FindChild("m_imgPanel/m_listItems") as RectTransform;
             _listRoot = FindListContent("m_imgPanel/m_listItems");
             _itemTemplate = FindListComponent<Button>("m_imgPanel/m_listItems", "m_item_BagItemTemplate")
                             ?? FindListComponent<Button>("m_imgPanel/m_listItems", "m_btnItemTemplate");
-            _txtEmpty = FindChildComponent<Text>("m_imgPanel/m_listItems/m_txtEmpty");
+            _txtEmpty = FindChildComponent<Text>("m_imgPanel/m_txtEmpty")
+                        ?? FindChildComponent<Text>("m_imgPanel/m_listItems/m_txtEmpty");
+            _detailContainer = FindChild("m_imgPanel/m_detailPanel") as RectTransform;
             _txtDetailName = FindChildComponent<Text>("m_imgPanel/m_detailPanel/m_txtName");
             _txtDetailDesc = FindChildComponent<Text>("m_imgPanel/m_detailPanel/m_txtDescription");
             _btnUse = FindChildComponent<Button>("m_imgPanel/m_detailPanel/m_btnUse");
@@ -71,7 +76,10 @@ namespace GameLogic
         private void RefreshList()
         {
             var entries = _viewModel?.BagItems ?? new List<BagItemEntryViewModel>();
-            SetActive(_txtEmpty, entries.Count == 0);
+            var hasItems = entries.Count > 0;
+            SetActive(_txtEmpty, !hasItems);
+            SetActive(_listContainer, hasItems);
+            SetActive(_detailContainer, hasItems);
 
             for (var i = 0; i < entries.Count; i++)
             {

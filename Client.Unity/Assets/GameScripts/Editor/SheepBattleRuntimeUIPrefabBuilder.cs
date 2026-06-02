@@ -255,13 +255,12 @@ public static class SheepBattleRuntimeUIPrefabBuilder
         Anchor(CreateText("m_txtTitle", panel, "背包", 32, FontStyle.Bold, TextAnchor.MiddleLeft, Color.black).rectTransform, 0f, 1f, 1f, 1f, 32f, -48f, -260f, 52f);
         Anchor(CreateButton("m_btnRefresh", panel, "刷新", new Color(0.20f, 0.46f, 0.70f, 1f)).GetComponent<RectTransform>(), 1f, 1f, 1f, 1f, -220f, -48f, 120f, 48f);
         Anchor(CreateButton("m_btnClose", panel, "关闭", new Color(0.66f, 0.22f, 0.22f, 1f)).GetComponent<RectTransform>(), 1f, 1f, 1f, 1f, -88f, -48f, 120f, 48f);
+        Center(CreateText("m_txtEmpty", panel, "背包为空", 26, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(0.18f, 0.18f, 0.18f, 1f)).rectTransform, 0f, -18f, 420f, 72f);
 
-        var list = new GameObject("m_listItems", typeof(RectTransform));
-        list.layer = LayerMask.NameToLayer("UI");
-        list.transform.SetParent(panel, false);
-        Anchor(list.GetComponent<RectTransform>(), 0f, 0f, 0f, 1f, 190f, -306f, 316f, 372f);
-        Stretch(CreateText("m_txtEmpty", list.transform, "背包为空", 24, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(0.18f, 0.18f, 0.18f, 1f)).rectTransform);
-        CreateBagItemTemplate(list.transform);
+        CreateGridScrollList(panel, "m_listItems", new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(32f, 58f), new Vector2(328f, -104f), new Vector2(64f, 64f), new Vector2(8f, 8f), 4, out var listRect, out var itemContent);
+        var listImage = listRect.gameObject.AddComponent<Image>();
+        listImage.color = new Color(0.86f, 0.89f, 0.84f, 1f);
+        CreateBagItemTemplate(itemContent);
 
         var detail = CreateImage("m_detailPanel", panel, new Color(0.90f, 0.92f, 0.88f, 1f));
         Anchor(detail.rectTransform, 1f, 0.5f, 1f, 0.5f, -254f, -28f, 430f, 410f);
@@ -278,7 +277,7 @@ public static class SheepBattleRuntimeUIPrefabBuilder
         rect.anchorMin = new Vector2(0f, 1f);
         rect.anchorMax = new Vector2(1f, 1f);
         rect.pivot = new Vector2(0.5f, 1f);
-        rect.sizeDelta = new Vector2(0f, 72f);
+        rect.sizeDelta = new Vector2(64f, 64f);
         rect.anchoredPosition = Vector2.zero;
 
         var label = root.transform.Find("m_txtLabel");
@@ -288,13 +287,10 @@ public static class SheepBattleRuntimeUIPrefabBuilder
         }
 
         var icon = CreateImage("m_imgIcon", root.transform, Color.white);
-        Anchor(icon.rectTransform, 0f, 0.5f, 0f, 0.5f, 42f, 0f, 46f, 46f);
-
-        var name = CreateText("m_txtName", root.transform, string.Empty, 19, FontStyle.Bold, TextAnchor.MiddleLeft, Color.white);
-        Anchor(name.rectTransform, 0f, 0.5f, 1f, 0.5f, 128f, 8f, -126f, 30f);
+        Center(icon.rectTransform, 0f, 2f, 42f, 42f);
 
         var count = CreateText("m_txtCount", root.transform, string.Empty, 17, FontStyle.Bold, TextAnchor.MiddleRight, Color.white);
-        Anchor(count.rectTransform, 1f, 0.5f, 1f, 0.5f, -54f, -18f, 92f, 26f);
+        Anchor(count.rectTransform, 1f, 0f, 1f, 0f, -26f, 12f, 48f, 24f);
         Save(root.gameObject, "BagItemWidget");
     }
 
@@ -303,26 +299,25 @@ public static class SheepBattleRuntimeUIPrefabBuilder
         var root = CreateRoot("MailUI");
         AddMask(root.transform, 0.55f);
         var panel = CreatePanel(root.transform, 900f, 580f);
-        Anchor(CreateText("m_txtTitle", panel, "邮件", 32, FontStyle.Bold, TextAnchor.MiddleLeft, Color.black).rectTransform, 0f, 1f, 1f, 1f, 32f, -48f, -260f, 52f);
+        var titleIcon = CreateImage("m_imgTitleIcon", panel, new Color(0.95f, 0.67f, 0.18f, 1f));
+        Anchor(titleIcon.rectTransform, 0f, 1f, 0f, 1f, 54f, -48f, 42f, 42f);
+        Anchor(CreateText("m_txtTitle", panel, "邮件", 32, FontStyle.Bold, TextAnchor.MiddleLeft, Color.black).rectTransform, 0f, 1f, 1f, 1f, 90f, -48f, -318f, 52f);
         Anchor(CreateButton("m_btnRefresh", panel, "刷新", new Color(0.20f, 0.46f, 0.70f, 1f)).GetComponent<RectTransform>(), 1f, 1f, 1f, 1f, -220f, -48f, 120f, 48f);
         Anchor(CreateButton("m_btnClose", panel, "关闭", new Color(0.66f, 0.22f, 0.22f, 1f)).GetComponent<RectTransform>(), 1f, 1f, 1f, 1f, -88f, -48f, 120f, 48f);
+        Center(CreateText("m_txtEmpty", panel, "暂无邮件", 26, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(0.18f, 0.18f, 0.18f, 1f)).rectTransform, 0f, -18f, 420f, 72f);
 
-        var list = new GameObject("m_listMails", typeof(RectTransform));
-        list.layer = LayerMask.NameToLayer("UI");
-        list.transform.SetParent(panel, false);
-        Anchor(list.GetComponent<RectTransform>(), 0f, 0f, 0f, 1f, 202f, -320f, 340f, 390f);
-        Stretch(CreateText("m_txtEmpty", list.transform, "暂无邮件", 24, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(0.18f, 0.18f, 0.18f, 1f)).rectTransform);
-        CreateMailItemTemplate(list.transform);
+        CreateScrollList(panel, "m_listMails", new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(32f, 58f), new Vector2(352f, -104f), out var listRect, out var mailContent);
+        var listImage = listRect.gameObject.AddComponent<Image>();
+        listImage.color = new Color(0.86f, 0.89f, 0.84f, 1f);
+        CreateMailItemTemplate(mailContent);
 
         var detail = CreateImage("m_detailPanel", panel, new Color(0.90f, 0.92f, 0.88f, 1f));
         Anchor(detail.rectTransform, 1f, 0.5f, 1f, 0.5f, -266f, -26f, 452f, 430f);
         Center(CreateText("m_txtTitle", detail.transform, string.Empty, 28, FontStyle.Bold, TextAnchor.MiddleLeft, Color.black).rectTransform, 0f, 164f, 384f, 50f);
         Center(CreateText("m_txtContent", detail.transform, string.Empty, 22, FontStyle.Normal, TextAnchor.UpperLeft, new Color(0.12f, 0.12f, 0.12f, 1f)).rectTransform, 0f, 52f, 384f, 168f);
         Center(CreateText("m_txtAttachment", detail.transform, string.Empty, 22, FontStyle.Bold, TextAnchor.MiddleLeft, new Color(0.12f, 0.24f, 0.42f, 1f)).rectTransform, 0f, -48f, 384f, 36f);
-        var attachmentList = new GameObject("m_listAttachments", typeof(RectTransform));
-        attachmentList.layer = LayerMask.NameToLayer("UI");
-        attachmentList.transform.SetParent(detail.transform, false);
-        Center(attachmentList.GetComponent<RectTransform>(), 0f, -102f, 384f, 84f);
+        var attachmentList = CreateImage("m_listAttachments", detail.transform, new Color(0.82f, 0.86f, 0.80f, 1f));
+        Center(attachmentList.rectTransform, 0f, -102f, 384f, 84f);
         var attachmentTemplate = CreateButton("m_btnAttachmentTemplate", attachmentList.transform, string.Empty, Color.white);
         var attachmentRect = attachmentTemplate.GetComponent<RectTransform>();
         attachmentRect.anchorMin = new Vector2(0f, 0.5f);
@@ -687,7 +682,7 @@ public static class SheepBattleRuntimeUIPrefabBuilder
         rect.anchorMin = new Vector2(0f, 1f);
         rect.anchorMax = new Vector2(1f, 1f);
         rect.pivot = new Vector2(0.5f, 1f);
-        rect.sizeDelta = new Vector2(0f, 72f);
+        rect.sizeDelta = new Vector2(64f, 64f);
         rect.anchoredPosition = Vector2.zero;
         template.gameObject.SetActive(false);
 
@@ -698,13 +693,10 @@ public static class SheepBattleRuntimeUIPrefabBuilder
         }
 
         var icon = CreateImage("m_imgIcon", template.transform, Color.white);
-        Anchor(icon.rectTransform, 0f, 0.5f, 0f, 0.5f, 42f, 0f, 46f, 46f);
-
-        var name = CreateText("m_txtName", template.transform, string.Empty, 19, FontStyle.Bold, TextAnchor.MiddleLeft, Color.white);
-        Anchor(name.rectTransform, 0f, 0.5f, 1f, 0.5f, 128f, 8f, -126f, 30f);
+        Center(icon.rectTransform, 0f, 2f, 42f, 42f);
 
         var count = CreateText("m_txtCount", template.transform, string.Empty, 17, FontStyle.Bold, TextAnchor.MiddleRight, Color.white);
-        Anchor(count.rectTransform, 1f, 0.5f, 1f, 0.5f, -54f, -18f, 92f, 26f);
+        Anchor(count.rectTransform, 1f, 0f, 1f, 0f, -26f, 12f, 48f, 24f);
         return template;
     }
 
@@ -803,6 +795,50 @@ public static class SheepBattleRuntimeUIPrefabBuilder
         layout.childControlHeight = false;
         layout.childForceExpandWidth = true;
         layout.childForceExpandHeight = false;
+        content.GetComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        var scroll = list.GetComponent<ScrollRect>();
+        scroll.viewport = viewport.GetComponent<RectTransform>();
+        scroll.content = contentRect;
+        scroll.horizontal = false;
+        scroll.vertical = true;
+        scroll.movementType = ScrollRect.MovementType.Clamped;
+    }
+
+    private static void CreateGridScrollList(Transform parent, string name, Vector2 anchorMin, Vector2 anchorMax, Vector2 offsetMin, Vector2 offsetMax, Vector2 cellSize, Vector2 spacing, int columns, out RectTransform listRect, out RectTransform contentRect)
+    {
+        var list = new GameObject(name, typeof(RectTransform), typeof(ScrollRect));
+        list.layer = LayerMask.NameToLayer("UI");
+        list.transform.SetParent(parent, false);
+        listRect = list.GetComponent<RectTransform>();
+        listRect.anchorMin = anchorMin;
+        listRect.anchorMax = anchorMax;
+        listRect.offsetMin = offsetMin;
+        listRect.offsetMax = offsetMax;
+
+        var viewport = new GameObject("Viewport", typeof(RectTransform), typeof(RectMask2D));
+        viewport.layer = LayerMask.NameToLayer("UI");
+        viewport.transform.SetParent(list.transform, false);
+        Stretch(viewport.GetComponent<RectTransform>());
+
+        var content = new GameObject("Content", typeof(RectTransform), typeof(GridLayoutGroup), typeof(ContentSizeFitter));
+        content.layer = LayerMask.NameToLayer("UI");
+        content.transform.SetParent(viewport.transform, false);
+        contentRect = content.GetComponent<RectTransform>();
+        contentRect.anchorMin = new Vector2(0f, 1f);
+        contentRect.anchorMax = new Vector2(1f, 1f);
+        contentRect.pivot = new Vector2(0.5f, 1f);
+        contentRect.offsetMin = Vector2.zero;
+        contentRect.offsetMax = Vector2.zero;
+
+        var layout = content.GetComponent<GridLayoutGroup>();
+        layout.cellSize = cellSize;
+        layout.spacing = spacing;
+        layout.startCorner = GridLayoutGroup.Corner.UpperLeft;
+        layout.startAxis = GridLayoutGroup.Axis.Horizontal;
+        layout.childAlignment = TextAnchor.UpperLeft;
+        layout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        layout.constraintCount = Mathf.Max(1, columns);
         content.GetComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
         var scroll = list.GetComponent<ScrollRect>();

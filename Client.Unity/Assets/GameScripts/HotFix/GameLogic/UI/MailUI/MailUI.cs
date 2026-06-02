@@ -14,9 +14,11 @@ namespace GameLogic
     {
         private Button _btnClose;
         private Button _btnRefresh;
+        private RectTransform _listContainer;
         private RectTransform _listRoot;
         private Button _mailTemplate;
         private Text _txtEmpty;
+        private RectTransform _detailContainer;
         private Text _txtTitle;
         private Text _txtContent;
         private Text _txtAttachment;
@@ -35,10 +37,13 @@ namespace GameLogic
         {
             _btnClose = FindChildComponent<Button>("m_imgPanel/m_btnClose");
             _btnRefresh = FindChildComponent<Button>("m_imgPanel/m_btnRefresh");
+            _listContainer = FindChild("m_imgPanel/m_listMails") as RectTransform;
             _listRoot = FindListContent("m_imgPanel/m_listMails");
             _mailTemplate = FindListComponent<Button>("m_imgPanel/m_listMails", "m_item_MailTemplate")
                             ?? FindListComponent<Button>("m_imgPanel/m_listMails", "m_btnMailTemplate");
-            _txtEmpty = FindChildComponent<Text>("m_imgPanel/m_listMails/m_txtEmpty");
+            _txtEmpty = FindChildComponent<Text>("m_imgPanel/m_txtEmpty")
+                        ?? FindChildComponent<Text>("m_imgPanel/m_listMails/m_txtEmpty");
+            _detailContainer = FindChild("m_imgPanel/m_detailPanel") as RectTransform;
             _txtTitle = FindChildComponent<Text>("m_imgPanel/m_detailPanel/m_txtTitle");
             _txtContent = FindChildComponent<Text>("m_imgPanel/m_detailPanel/m_txtContent");
             _txtAttachment = FindChildComponent<Text>("m_imgPanel/m_detailPanel/m_txtAttachment");
@@ -86,7 +91,10 @@ namespace GameLogic
         private void RefreshList()
         {
             var entries = _viewModel?.Mails ?? new List<MailEntryViewModel>();
-            SetActive(_txtEmpty, entries.Count == 0);
+            var hasMail = entries.Count > 0;
+            SetActive(_txtEmpty, !hasMail);
+            SetActive(_listContainer, hasMail);
+            SetActive(_detailContainer, hasMail);
             for (var i = 0; i < entries.Count; i++)
             {
                 RefreshItem(i, entries[i]);

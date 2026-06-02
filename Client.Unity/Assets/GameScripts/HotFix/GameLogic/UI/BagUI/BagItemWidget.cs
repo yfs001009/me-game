@@ -53,10 +53,10 @@ namespace GameLogic
                 SetQualityFrame(_imgFrame, data.Quality);
             }
 
-            // 物品图标（暂时不显示，等有图标资源）
             if (_imgIcon != null)
             {
-                _imgIcon.gameObject.SetActive(false);
+                _imgIcon.gameObject.SetActive(true);
+                SetItemIcon(_imgIcon, data.IconAsset);
             }
 
             // 物品名称
@@ -100,6 +100,34 @@ namespace GameLogic
 
             // 默认颜色
             image.color = new Color(0.78f, 0.82f, 0.76f, 1f);
+        }
+
+        private static void SetItemIcon(Image image, string iconAsset)
+        {
+            image.sprite = null;
+            image.color = new Color(1f, 1f, 1f, 0.82f);
+
+            if (string.IsNullOrWhiteSpace(iconAsset))
+            {
+                return;
+            }
+
+            var texture = GameModule.Resource.LoadAsset<Texture2D>(iconAsset);
+            if (texture == null)
+            {
+                return;
+            }
+
+            image.sprite = Sprite.Create(
+                texture,
+                new Rect(0f, 0f, texture.width, texture.height),
+                new Vector2(0.5f, 0.5f),
+                100f,
+                0,
+                SpriteMeshType.FullRect);
+            image.type = Image.Type.Simple;
+            image.preserveAspect = true;
+            image.color = Color.white;
         }
     }
 }

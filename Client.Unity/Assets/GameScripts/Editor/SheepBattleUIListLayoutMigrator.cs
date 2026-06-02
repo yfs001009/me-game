@@ -31,11 +31,11 @@ public static class SheepBattleUIListLayoutMigrator
         {
             PrefabPath = "Assets/AssetRaw/UI/BagUI.prefab",
             ListPath = "m_imgPanel/m_listItems",
-            TemplateName = "m_btnItemTemplate",
+            TemplateName = "m_item_BagItemTemplate",
             Mode = LayoutMode.Grid,
-            CellSize = new Vector2(138f, 76f),
-            Spacing = new Vector2(16f, 14f),
-            ConstraintCount = 2,
+            CellSize = new Vector2(64f, 64f),
+            Spacing = new Vector2(8f, 8f),
+            ConstraintCount = 4,
             VerticalScroll = true
         },
         new()
